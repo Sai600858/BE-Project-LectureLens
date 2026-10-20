@@ -10,4 +10,5 @@ import java.util.List;
 public interface TranscriptSegmentRepository extends JpaRepository<TranscriptSegment, Long> {
     List<TranscriptSegment> findByLectureIdOrderByStartTimeAsc(String lectureId);
     List<TranscriptSegment> findByLectureIdAndTextContainingIgnoreCase(String lectureId, String query);
+    long countByLectureId(String lectureId);
 }

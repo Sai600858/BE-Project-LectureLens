@@ -54,11 +54,14 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
                 .requestMatchers("/api/auth/me").authenticated()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/lectures", "/api/lectures/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/lectures").hasRole("ADMIN")
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/lectures").hasAnyRole("TEACHER", "ADMIN")
+                .requestMatchers("/api/lectures/**").authenticated()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/health", "/actuator/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/socket.io/**").permitAll()
-                .requestMatchers("/api/lectures/**").authenticated()
                 .anyRequest().authenticated()
             );
 

@@ -10,7 +10,7 @@ public class Lecture {
     @Id
     private String id;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "room_id", nullable = false, unique = true)
     private String roomId;
 
     @Column(nullable = false)
@@ -23,21 +23,32 @@ public class Lecture {
     @JoinColumn(name = "host_id", nullable = false)
     private User host;
 
+    @Column(name = "scheduled_at")
     private LocalDateTime scheduledAt;
+
+    @Column(name = "start_time")
     private LocalDateTime startTime;
+
+    @Column(name = "end_time")
     private LocalDateTime endTime;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private LectureStatus status = LectureStatus.SCHEDULED;
 
+    @Column(nullable = false)
     private String visibility = "PUBLIC";
+
+    @Column(name = "password_hash")
     private String passwordHash;
+
+    @Column(nullable = false)
     private String subject = "";
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "domain_context_json", columnDefinition = "TEXT")
     private String domainContextJson = "{}";
 
+    @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public Lecture() {}

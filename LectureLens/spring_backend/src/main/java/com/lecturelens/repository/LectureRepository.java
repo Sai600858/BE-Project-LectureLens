@@ -11,8 +11,13 @@ import java.util.Optional;
 @Repository
 public interface LectureRepository extends JpaRepository<Lecture, String> {
     Optional<Lecture> findByRoomId(String roomId);
+    Optional<Lecture> findByIdOrRoomId(String id, String roomId);
+    boolean existsByRoomId(String roomId);
     List<Lecture> findByStatus(LectureStatus status);
     long countByStatus(LectureStatus status);
     List<Lecture> findByHostId(String hostId);
     List<Lecture> findAllByOrderByCreatedAtDesc();
+    List<Lecture> findByStatusOrderByCreatedAtDesc(LectureStatus status);
+    List<Lecture> findByHostIdOrderByCreatedAtDesc(String hostId);
+    List<Lecture> findByStatusAndHostIdOrderByCreatedAtDesc(LectureStatus status, String hostId);
 }

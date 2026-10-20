@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface RecordingRepository extends JpaRepository<Recording, String> {
     Optional<Recording> findByLectureId(String lectureId);
+    boolean existsByLectureId(String lectureId);
 }

@@ -57,9 +57,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
-        log.warn("[Security] Access denied: correlationId={}", getCorrelationId());
+        log.warn("[Security] Access denied: correlationId={}, message={}", getCorrelationId(), ex.getMessage());
         Map<String, Object> resp = new HashMap<>();
-        resp.put("error", "Access denied: insufficient permissions to perform this operation");
+        String errorMsg;
+        if (ex.getMessage() != null && !ex.getMessage().isBlank()) {
+            if (ex.getMessage().contains("Access denied")) {
+                errorMsg = ex.getMessage();
+            } else {
+                errorMsg = "Access denied: " + ex.getMessage();
+            }
+        } else {
+            errorMsg = "Access denied: insufficient permissions to perform this operation";
+        }
+        resp.put("error", errorMsg);
         resp.put("correlationId", getCorrelationId());
         resp.put("status", HttpStatus.FORBIDDEN.value());
 

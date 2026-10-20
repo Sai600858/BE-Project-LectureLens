@@ -136,6 +136,80 @@ const io = new Server(httpServer, {
 // rooms: Map<roomId, Room>
 const rooms = new Map();
 
+// ─── INTERNAL SERVICE-TO-SERVICE MEDIA COORDINATION ───────────────────────────
+const SERVICE_SECRET = process.env.SERVICE_SECRET || 'InternalLectureLensServiceCommunicationSecretKey2026';
+
+function verifyServiceAuth(req, res, next) {
+  const serviceIdentity = req.headers['x-service-identity'];
+  const timestampStr = req.headers['x-service-timestamp'];
+  const signature = req.headers['x-service-signature'];
+
+  if (!serviceIdentity || !timestampStr || !signature) {
+    return res.status(401).json({ error: 'Service authentication credentials missing' });
+  }
+
+  const timestamp = parseInt(timestampStr, 10);
+  const now = Date.now();
+  if (isNaN(timestamp) || Math.abs(now - timestamp) > 60000) {
+    return res.status(401).json({ error: 'Service authentication expired or clock skew exceeded' });
+  }
+
+  const payload = `${serviceIdentity}:${timestamp}`;
+  const hmac = crypto.createHmac('sha256', SERVICE_SECRET);
+  hmac.update(payload);
+  const expectedSignature = hmac.digest('base64');
+
+  try {
+    const valid = crypto.timingSafeEqual(Buffer.from(signature, 'utf8'), Buffer.from(expectedSignature, 'utf8'));
+    if (!valid) {
+      return res.status(403).json({ error: 'Invalid service signature' });
+    }
+  } catch (_) {
+    return res.status(403).json({ error: 'Invalid service signature format' });
+  }
+
+  next();
+}
+
+app.post('/internal/media/rooms/init', verifyServiceAuth, async (req, res) => {
+  try {
+    const { roomId, lectureId } = req.body;
+    if (!roomId) return res.status(400).json({ error: 'roomId is required' });
+
+    let room = rooms.get(roomId);
+    if (!room) {
+      room = await new Room(roomId).init();
+      room.lectureId = lectureId;
+      rooms.set(roomId, room);
+      console.log(`[Media Coordinator] Pre-initialized mediasoup room ${roomId} for lecture ${lectureId}`);
+    }
+    res.json({ success: true, roomId, lectureId, status: 'INITIALIZED' });
+  } catch (err) {
+    console.error('[Media Coordinator] Error initializing room:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/internal/media/rooms/close', verifyServiceAuth, async (req, res) => {
+  try {
+    const { roomId, lectureId } = req.body;
+    if (!roomId) return res.status(400).json({ error: 'roomId is required' });
+
+    if (rooms.has(roomId)) {
+      rooms.delete(roomId);
+    }
+    io.to(roomId).emit('lectureEnded', { roomId, lectureId, status: 'ENDED' });
+    if (lectureId) {
+      io.to(lectureId).emit('lectureEnded', { roomId, lectureId, status: 'ENDED' });
+    }
+    console.log(`[Media Coordinator] Closed mediasoup room ${roomId} for lecture ${lectureId}`);
+    res.json({ success: true, roomId, lectureId, status: 'CLOSED' });
+  } catch (err) {
+    console.error('[Media Coordinator] Error closing room:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── AUTHENTICATION ROUTES ───────────────────────────────────────────────────
 
 app.post('/api/auth/register', authLimiter, optionalAuth, async (req, res) => {
