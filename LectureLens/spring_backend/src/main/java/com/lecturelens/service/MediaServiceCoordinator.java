@@ -125,4 +125,64 @@ public class MediaServiceCoordinator {
 
         return false;
     }
+
+    /**
+     * Notify Node.js media service of a newly ingested whiteboard snapshot so it broadcasts boardContentAdded to room.
+     */
+    public boolean notifyBoardFrameAdded(String roomId, String lectureId, Object content) {
+        return sendNotification("/internal/media/notify/board-frame", Map.of(
+                "roomId", roomId != null ? roomId : "",
+                "lectureId", lectureId != null ? lectureId : "",
+                "content", content != null ? content : Map.of()
+        ));
+    }
+
+    /**
+     * Notify Node.js media service of a newly ingested screen snapshot so it broadcasts screenContentAdded to room.
+     */
+    public boolean notifyScreenFrameAdded(String roomId, String lectureId, Object content) {
+        return sendNotification("/internal/media/notify/screen-frame", Map.of(
+                "roomId", roomId != null ? roomId : "",
+                "lectureId", lectureId != null ? lectureId : "",
+                "content", content != null ? content : Map.of()
+        ));
+    }
+
+    /**
+     * Notify Node.js media service of updated transcript segments so it broadcasts transcriptUpdated to room.
+     */
+    public boolean notifyTranscriptUpdated(String roomId, Object segments, String fullText, String status) {
+        Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("roomId", roomId != null ? roomId : "");
+        payload.put("segments", segments != null ? segments : java.util.List.of());
+        payload.put("fullText", fullText != null ? fullText : "");
+        payload.put("status", status != null ? status : "live");
+        return sendNotification("/internal/media/notify/transcript", payload);
+    }
+
+    private boolean sendNotification(String path, Map<String, Object> payload) {
+        String targetUrl = mediaServiceUrl + path;
+        long timestamp = System.currentTimeMillis();
+        String signature = serviceAuthToken.generateSignature("backend-spring", timestamp);
+        String correlationId = MDC.get(CorrelationIdFilter.MDC_KEY);
+        if (correlationId == null) correlationId = "spring-" + System.currentTimeMillis();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set(ServiceAuthToken.HEADER_SERVICE_IDENTITY, "backend-spring");
+        headers.set(ServiceAuthToken.HEADER_SERVICE_TIMESTAMP, String.valueOf(timestamp));
+        headers.set(ServiceAuthToken.HEADER_SERVICE_SIGNATURE, signature);
+        headers.set("X-Correlation-Id", correlationId);
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.postForEntity(targetUrl, request, Map.class);
+            return response.getStatusCode().is2xxSuccessful();
+        } catch (Exception e) {
+            log.debug("[MediaCoordination] Could not send event notification to {}: {}", targetUrl, e.getMessage());
+            return false;
+        }
+    }
 }
+

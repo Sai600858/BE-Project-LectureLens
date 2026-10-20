@@ -106,6 +106,27 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(resp);
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalState(IllegalStateException ex) {
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("error", ex.getMessage());
+        resp.put("correlationId", getCorrelationId());
+        resp.put("status", HttpStatus.BAD_REQUEST.value());
+
+        return ResponseEntity.badRequest().body(resp);
+    }
+
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleMessageNotReadable(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("error", "Malformed request body or payload exceeds size constraints");
+        resp.put("correlationId", getCorrelationId());
+        resp.put("status", HttpStatus.BAD_REQUEST.value());
+
+        return ResponseEntity.badRequest().body(resp);
+    }
+
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneralException(Exception ex, HttpServletRequest request) {
         // Log stack trace internally with correlationId; do NOT return raw stack traces or internal paths to client

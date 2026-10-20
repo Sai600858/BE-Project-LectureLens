@@ -210,6 +210,69 @@ app.post('/internal/media/rooms/close', verifyServiceAuth, async (req, res) => {
   }
 });
 
+// Specialized Vision Worker Endpoint for Spring Boot Delegation
+app.post('/internal/vision/analyze', verifyServiceAuth, async (req, res) => {
+  try {
+    const { frameType, lectureId, imageBase64, timestamp, imagePath } = req.body;
+    let result;
+    if (frameType === 'screen') {
+      result = await processScreenFrame({ lectureId, imageBase64, timestamp: parseFloat(timestamp) || 0, imagePath });
+    } else {
+      result = await processBoardFrame({ lectureId, imageBase64, timestamp: parseFloat(timestamp) || 0, imagePath });
+    }
+    res.json({ success: true, analysis: result });
+  } catch (err) {
+    console.error('[Internal Vision Worker] Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Real-Time Event Notification Webhooks from Spring Boot to Node.js Socket.IO
+app.post('/internal/media/notify/board-frame', verifyServiceAuth, (req, res) => {
+  try {
+    const { roomId, lectureId, content } = req.body;
+    if (roomId) io.to(roomId).emit('boardContentAdded', content);
+    if (lectureId && lectureId !== roomId) io.to(lectureId).emit('boardContentAdded', content);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/internal/media/notify/screen-frame', verifyServiceAuth, (req, res) => {
+  try {
+    const { roomId, lectureId, content } = req.body;
+    if (roomId) {
+      io.to(roomId).emit('screenContentAdded', content);
+      io.to(roomId).emit('boardContentAdded', content);
+    }
+    if (lectureId && lectureId !== roomId) {
+      io.to(lectureId).emit('screenContentAdded', content);
+      io.to(lectureId).emit('boardContentAdded', content);
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/internal/media/notify/transcript', verifyServiceAuth, (req, res) => {
+  try {
+    const { roomId, segments, fullText, status } = req.body;
+    if (roomId) {
+      io.to(roomId).emit('transcriptUpdated', {
+        roomId,
+        segments: segments || [],
+        fullText: fullText || '',
+        status: status || 'live',
+      });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── AUTHENTICATION ROUTES ───────────────────────────────────────────────────
 
 app.post('/api/auth/register', authLimiter, optionalAuth, async (req, res) => {
