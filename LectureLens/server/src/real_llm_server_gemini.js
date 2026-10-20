@@ -22,15 +22,11 @@ const CANDIDATE_MODELS = [
   'gemini-3.5-flash',
 ].filter((v, i, a) => v && a.indexOf(v) === i);
 
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { getDefaultKeyManager } = require('./geminiKeyManager');
+const geminiManager = getDefaultKeyManager();
 
-// Support multiple comma-separated keys in GEMINI_API_KEY
-const rawKeys = (process.env.GEMINI_API_KEY || '').split(',').map((k) => k.trim()).filter((k) => k && k !== 'your_gemini_api_key_here');
-const aiInstances = rawKeys.map((key) => new GoogleGenerativeAI(key));
-let currentKeyIndex = 0;
-
-if (aiInstances.length > 0) {
-  console.log(`[Gemini STT Server] Loaded ${aiInstances.length} Gemini API Key(s) for automatic rotation!`);
+if (geminiManager.getActiveKeyCount() > 0) {
+  console.log(`[Gemini STT Server] Loaded ${geminiManager.getActiveKeyCount()} Gemini API Key(s) for automatic rotation!`);
 } else {
   console.warn('[Gemini STT Server] WARNING: No valid GEMINI_API_KEY found in server/.env');
 }
@@ -79,37 +75,27 @@ io.on('connection', (socket) => {
       let result = null;
       let lastError = null;
 
-      // Try available API keys starting from current index
-      for (let attempt = 0; attempt < aiInstances.length; attempt++) {
-        const genAIIndex = (currentKeyIndex + attempt) % aiInstances.length;
-        const genAI = aiInstances[genAIIndex];
-
+      const result = await geminiManager.executeWithRotation(async (genAI, keyIndex) => {
+        let lastModelErr = null;
         for (const modelName of CANDIDATE_MODELS) {
           try {
             const model = genAI.getGenerativeModel({ model: modelName });
-            result = await model.generateContent([prompt, audioPart]);
-            if (result) {
-              currentKeyIndex = genAIIndex; // Keep working key
-              break;
-            }
+            return await model.generateContent([prompt, audioPart]);
           } catch (e) {
-            lastError = e;
-            const errMsg = e.message || '';
-            if (errMsg.includes('429') || errMsg.includes('Quota exceeded') || errMsg.includes('404')) {
-              console.warn(`[Gemini STT] Model ${modelName} on Key #${genAIIndex + 1} quota exceeded. Trying next candidate model...`);
-              continue;
-            } else {
-              console.warn(`[Gemini STT] Model ${modelName} notice:`, errMsg.slice(0, 90));
+            lastModelErr = e;
+            const errMsg = String(e.message || '');
+            if (errMsg.includes('429') || errMsg.includes('Quota exceeded') || errMsg.includes('resource_exhausted')) {
+              throw e; // Immediately let manager rotate key
+            }
+            if (errMsg.includes('404') || errMsg.includes('not found')) {
+              console.warn(`[Gemini STT] Model ${modelName} on Key #${keyIndex + 1} not found. Trying next candidate model...`);
               continue;
             }
+            throw e;
           }
         }
-        if (result) break;
-      }
-
-      if (!result) {
-        throw lastError || new Error('All Gemini API keys/models failed');
-      }
+        throw lastModelErr || new Error(`All candidate models failed on Key #${keyIndex + 1}`);
+      });
 
       const responseText = result.response.text();
       let transcribedText = responseText ? responseText.trim().replace(/^["']|["']$/g, '') : '';

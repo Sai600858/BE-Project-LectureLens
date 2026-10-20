@@ -47,21 +47,8 @@ const io = new Server(PORT, {
 let configuredProvider = (process.env.STT_PROVIDER || 'auto').toLowerCase().trim();
 
 // ── Gemini Setup ────────────────────────────────────────────────────────────
-let geminiInstances = [];
-let geminiKeyIndex = 0;
-const rawGeminiKeys = (process.env.GEMINI_API_KEY || '')
-  .split(',')
-  .map((k) => k.trim())
-  .filter((k) => k && !k.includes('your_gemini_api_key'));
-
-if (rawGeminiKeys.length > 0) {
-  try {
-    const { GoogleGenerativeAI } = require('@google/generative-ai');
-    geminiInstances = rawGeminiKeys.map((k) => new GoogleGenerativeAI(k));
-  } catch (e) {
-    console.warn('[Unified STT] Could not load @google/generative-ai:', e.message);
-  }
-}
+const { getDefaultKeyManager } = require('./geminiKeyManager');
+const geminiManager = getDefaultKeyManager();
 
 // ── OpenAI Setup ────────────────────────────────────────────────────────────
 let openaiClient = null;
@@ -78,7 +65,7 @@ if (rawOpenAiKey && !rawOpenAiKey.includes('your_openai_api_key')) {
 // ── Active Provider Resolution ──────────────────────────────────────────────
 function resolveActiveProvider() {
   if (configuredProvider === 'gemini') {
-    if (geminiInstances.length > 0) return 'gemini';
+    if (geminiManager.getActiveKeyCount() > 0) return 'gemini';
     console.warn('[Unified STT] Provider requested is gemini, but no GEMINI_API_KEY found. Falling back to mock.');
     return 'mock';
   }
@@ -91,7 +78,7 @@ function resolveActiveProvider() {
     return 'mock';
   }
   // Auto-detect
-  if (geminiInstances.length > 0) return 'gemini';
+  if (geminiManager.getActiveKeyCount() > 0) return 'gemini';
   if (openaiClient) return 'openai';
   return 'mock';
 }
@@ -141,10 +128,6 @@ io.on('connection', (socket) => {
     // 1. GEMINI PROVIDER
     if (activeProvider === 'gemini') {
       try {
-        const ai = geminiInstances[geminiKeyIndex % geminiInstances.length];
-        geminiKeyIndex++;
-
-        const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
         const audioPart = {
           inlineData: {
             data: buffer.toString('base64'),
@@ -152,10 +135,13 @@ io.on('connection', (socket) => {
           },
         };
 
-        const result = await model.generateContent([
-          `You are an accurate real-time speech transcriber. Transcribe this audio clip exactly as spoken in ${language}. Return ONLY the transcribed words with zero commentary or punctuation explanations. If the audio is silence or unintelligible noise, return [SILENCE].`,
-          audioPart,
-        ]);
+        const result = await geminiManager.executeWithRotation(async (client, keyIndex) => {
+          const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
+          return await model.generateContent([
+            `You are an accurate real-time speech transcriber. Transcribe this audio clip exactly as spoken in ${language}. Return ONLY the transcribed words with zero commentary or punctuation explanations. If the audio is silence or unintelligible noise, return [SILENCE].`,
+            audioPart,
+          ]);
+        });
 
         const text = result.response.text().trim();
         if (text && text !== '[SILENCE]') {
