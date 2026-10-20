@@ -585,6 +585,17 @@ input::placeholder, textarea::placeholder {
   }
 }
 
+/* Recorded Lecture Workspace responsive split layouts */
+@media (max-width: 960px) {
+  .recording-split-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .quiz-flash-split {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
 
 
 
