@@ -37,3 +37,7 @@ venv/
 .vscode/
 .DS_Store
 Thumbs.db
+.gemini/
+.agent/
+.agents/
+*.log

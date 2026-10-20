@@ -9,6 +9,12 @@
  *  - Key teaching takeaways
  */
 import React, { useEffect, useRef, useState } from 'react';
+import DOMPurify from 'dompurify';
+
+function sanitizeSvg(svgContent) {
+  if (!svgContent) return '';
+  return DOMPurify.sanitize(svgContent, { USE_PROFILES: { svg: true, svgFilters: true } });
+}
 
 /* ── KaTeX Loader ────────────────────────────────────────────────────────── */
 let katexLoaded = false;
@@ -441,7 +447,7 @@ export function BoardSnapshot({ snapshot, onJumpTimestamp }) {
                   {/* Render the deterministic SVG */}
                   <div
                     style={{ overflowX: 'auto', display: 'flex', justifyContent: 'center', margin: '8px 0' }}
-                    dangerouslySetInnerHTML={{ __html: it.svg }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeSvg(it.svg) }}
                   />
                   {it.explanation && (
                     <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: '1.5', marginTop: '6px' }}>
@@ -587,7 +593,7 @@ export function BoardSnapshotCompact({ snapshot, onJumpTimestamp }) {
                 <div style={SC.diagLabel}>📈 {it.content || 'Generated Visualization'}</div>
                 <div
                   style={{ overflowX: 'auto', display: 'flex', justifyContent: 'center', margin: '4px 0' }}
-                  dangerouslySetInnerHTML={{ __html: it.svg }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeSvg(it.svg) }}
                 />
                 {it.explanation && <div style={SC.diagDesc}>{it.explanation}</div>}
               </div>

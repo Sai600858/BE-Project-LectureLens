@@ -4,7 +4,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test test/visualization.test.js",
+    "test": "node --test test/visualization.test.js test/security_audit.test.js",
     "dev": "nodemon src/server.js",
     "llm-server": "node src/mock_llm_server.js",
     "stt-openai": "node src/real_llm_server_openai.js",
@@ -18,6 +18,8 @@
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^4.18.2",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "mediasoup": "^3.14.7",
     "multer": "^2.4.0",

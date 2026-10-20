@@ -89,19 +89,47 @@ function requireRole(...allowedRoles) {
 
 /**
  * Register a new user
+ * Only ADMIN users can register TEACHER or ADMIN accounts.
+ * Public registration is restricted to STUDENT accounts.
  */
-async function registerUser({ name, email, password, role = 'STUDENT' }) {
-  if (!name || !email || !password) {
-    throw new Error('Name, email, and password are required');
+async function registerUser({ name, email, password, role = 'STUDENT' }, requesterUser = null) {
+  if (!name || !name.trim()) {
+    throw new Error('Name is required');
+  }
+  if (!email || !email.trim()) {
+    throw new Error('Email is required');
+  }
+  if (!password) {
+    throw new Error('Password is required');
+  }
+
+  const cleanEmail = email.toLowerCase().trim();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(cleanEmail)) {
+    throw new Error('Invalid email format');
+  }
+
+  if (password.length < 8) {
+    throw new Error('Password must be at least 8 characters long');
   }
 
   const validRoles = ['ADMIN', 'TEACHER', 'STUDENT'];
-  const normalizedRole = role.toUpperCase();
-  if (!validRoles.includes(normalizedRole)) {
+  const requestedRole = (role || 'STUDENT').toUpperCase().trim();
+  if (!validRoles.includes(requestedRole)) {
     throw new Error(`Role must be one of: ${validRoles.join(', ')}`);
   }
 
-  const existing = await get('SELECT id FROM users WHERE email = ?', [email.toLowerCase().trim()]);
+  // Privilege escalation prevention:
+  // Non-ADMIN callers (or unauthenticated public registrations) cannot assign TEACHER or ADMIN roles
+  let finalRole = 'STUDENT';
+  if (requestedRole === 'ADMIN' || requestedRole === 'TEACHER') {
+    if (!requesterUser || requesterUser.role !== 'ADMIN') {
+      throw new Error(`Privilege escalation prevented: only administrators can create ${requestedRole} accounts`);
+    }
+    finalRole = requestedRole;
+  }
+
+  const existing = await get('SELECT id FROM users WHERE email = ?', [cleanEmail]);
   if (existing) {
     throw new Error('An account with this email already exists');
   }
@@ -111,10 +139,10 @@ async function registerUser({ name, email, password, role = 'STUDENT' }) {
 
   await run(
     'INSERT INTO users (id, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)',
-    [id, name.trim(), email.toLowerCase().trim(), passwordHash, normalizedRole]
+    [id, name.trim(), cleanEmail, passwordHash, finalRole]
   );
 
-  const newUser = { id, name: name.trim(), email: email.toLowerCase().trim(), role: normalizedRole };
+  const newUser = { id, name: name.trim(), email: cleanEmail, role: finalRole };
   const token = generateToken(newUser);
 
   return { user: newUser, token };

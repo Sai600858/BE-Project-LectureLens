@@ -44,17 +44,62 @@ const {
 } = require('./pdfService');
 const { saveRecording, streamRecording } = require('./recordingService');
 const { callGemini } = require('./aiModelHelper');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const translationCache = new Map();
 
 const PORT = process.env.PORT || 3001;
 
-// Multer upload config
+// Allowed CORS origins
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+  : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000'];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    return callback(new Error('Blocked by CORS policy'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Range', 'x-lecture-password'],
+  credentials: true,
+};
+
+// Rate Limiters
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many authentication attempts. Please try again in 15 minutes.' },
+});
+
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'AI generation rate limit reached. Please wait a moment before trying again.' },
+});
+
+// Multer upload config with file validation & size limit
 const UPLOADS_DIR = path.join(__dirname, '..', 'data', 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
-const upload = multer({ dest: UPLOADS_DIR });
+const upload = multer({
+  dest: UPLOADS_DIR,
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['video/webm', 'video/mp4', 'audio/webm', 'audio/wav', 'audio/mpeg', 'image/jpeg', 'image/png'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Invalid file type: only audio, video, and image files are permitted'));
+  },
+});
 
 const SNAPSHOTS_DIR = path.join(__dirname, '..', 'data', 'snapshots');
 if (!fs.existsSync(SNAPSHOTS_DIR)) {
@@ -62,7 +107,22 @@ if (!fs.existsSync(SNAPSHOTS_DIR)) {
 }
 
 const app = express();
-app.use(cors());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        connectSrc: ["'self'", 'ws:', 'wss:', 'http://localhost:*', 'https://generativelanguage.googleapis.com'],
+        imgSrc: ["'self'", 'data:', 'blob:', 'http://localhost:*'],
+        mediaSrc: ["'self'", 'blob:', 'http://localhost:*'],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+      },
+    },
+  })
+);
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/snapshots', express.static(SNAPSHOTS_DIR));
@@ -70,7 +130,7 @@ app.use('/uploads', express.static(UPLOADS_DIR));
 
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
-  cors: { origin: '*', methods: ['GET', 'POST'] },
+  cors: { origin: allowedOrigins, methods: ['GET', 'POST'], credentials: true },
 });
 
 // rooms: Map<roomId, Room>
@@ -78,17 +138,17 @@ const rooms = new Map();
 
 // ─── AUTHENTICATION ROUTES ───────────────────────────────────────────────────
 
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/auth/register', authLimiter, optionalAuth, async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
-    const result = await registerUser({ name, email, password, role });
+    const result = await registerUser({ name, email, password, role }, req.user);
     res.status(201).json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     const result = await loginUser({ email, password });
@@ -117,11 +177,12 @@ app.post('/api/lectures', authenticateToken, requireRole('TEACHER', 'ADMIN'), as
 
     const lectureId = 'lec_' + uuidv4().slice(0, 8);
     const roomId = uuidv4().slice(0, 8).toUpperCase();
+    const passwordHash = password ? await bcrypt.hash(password, 10) : null;
 
     await run(
       `INSERT INTO lectures (id, room_id, title, description, host_id, scheduled_at, status, visibility, password_hash, subject)
        VALUES (?, ?, ?, ?, ?, ?, 'SCHEDULED', ?, ?, ?)`,
-      [lectureId, roomId, title, description || '', req.user.id, scheduledAt || null, visibility, password || null, subject || '']
+      [lectureId, roomId, title, description || '', req.user.id, scheduledAt || null, visibility, passwordHash, subject || '']
     );
 
     // Pre-initialize mediasoup room so students and teachers can join immediately
@@ -209,17 +270,27 @@ app.put('/api/lectures/:id/status', authenticateToken, async (req, res) => {
     const valid = ['SCHEDULED', 'LIVE', 'ENDED', 'PROCESSING', 'COMPLETED'];
     if (!valid.includes(status)) return res.status(400).json({ error: 'Invalid status' });
 
-    await run('UPDATE lectures SET status = ? WHERE id = ? OR room_id = ?', [status, req.params.id, req.params.id]);
+    const lec = await get('SELECT id, host_id FROM lectures WHERE id = ? OR room_id = ?', [req.params.id, req.params.id]);
+    if (!lec) return res.status(404).json({ error: 'Lecture not found' });
+    if (req.user.role !== 'ADMIN' && lec.host_id !== req.user.id) {
+      return res.status(403).json({ error: 'Forbidden: only the lecture host or an admin can update lecture status' });
+    }
+
+    await run('UPDATE lectures SET status = ? WHERE id = ?', [status, lec.id]);
     res.json({ success: true, status });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/lectures/:id/end', optionalAuth, async (req, res) => {
+app.post('/api/lectures/:id/end', authenticateToken, async (req, res) => {
   try {
-    const lecture = await get('SELECT id, room_id FROM lectures WHERE id = ? OR room_id = ?', [req.params.id, req.params.id]);
+    const lecture = await get('SELECT id, room_id, host_id FROM lectures WHERE id = ? OR room_id = ?', [req.params.id, req.params.id]);
     if (!lecture) return res.status(404).json({ error: 'Lecture not found' });
+
+    if (req.user.role !== 'ADMIN' && lecture.host_id !== req.user.id) {
+      return res.status(403).json({ error: 'Forbidden: only the lecture host or an admin can end this lecture' });
+    }
 
     const lectureId = lecture.id;
     const roomId = lecture.room_id;
@@ -249,8 +320,8 @@ app.post('/api/lectures/:id/end', optionalAuth, async (req, res) => {
   }
 });
 
-// Delete all lectures & clear all history
-app.delete('/api/lectures', optionalAuth, async (req, res) => {
+// Delete all lectures & clear all history (Admin Only)
+app.delete('/api/lectures', authenticateToken, requireRole('ADMIN'), async (req, res) => {
   try {
     await run('DELETE FROM chat_messages');
     await run('DELETE FROM metadata_consistency_reports');
@@ -277,18 +348,22 @@ app.delete('/api/lectures', optionalAuth, async (req, res) => {
     rooms.clear();
     translationCache.clear();
 
-    console.log('[Lecture History] All lecture history cleared from database.');
+    console.log('[Lecture History] All lecture history cleared from database by admin.');
     res.json({ success: true, message: 'All lecture history cleared successfully.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Delete a specific lecture
-app.delete('/api/lectures/:id', optionalAuth, async (req, res) => {
+// Delete a specific lecture (Admin or Host Only)
+app.delete('/api/lectures/:id', authenticateToken, async (req, res) => {
   try {
-    const lecture = await get('SELECT id, room_id FROM lectures WHERE id = ? OR room_id = ?', [req.params.id, req.params.id]);
+    const lecture = await get('SELECT id, room_id, host_id FROM lectures WHERE id = ? OR room_id = ?', [req.params.id, req.params.id]);
     if (!lecture) return res.status(404).json({ error: 'Lecture not found' });
+
+    if (req.user.role !== 'ADMIN' && lecture.host_id !== req.user.id) {
+      return res.status(403).json({ error: 'Forbidden: only the lecture host or an admin can delete this lecture' });
+    }
 
     const lecId = lecture.id;
     const rmId = lecture.room_id;
@@ -380,7 +455,10 @@ async function checkLectureAccess(lectureId, user) {
   if (lec.visibility === 'PRIVATE') {
     if (!user) return { allowed: false, status: 401, error: 'Authentication required to access private lecture content' };
     if (user.role !== 'ADMIN' && lec.host_id !== user.id) {
-      return { allowed: false, status: 403, error: 'Access denied to private lecture content' };
+      const enrolled = await get('SELECT id FROM participants WHERE lecture_id = ? AND user_id = ?', [lec.id, user.id]);
+      if (!enrolled) {
+        return { allowed: false, status: 403, error: 'Access denied to private lecture content' };
+      }
     }
   }
   return { allowed: true, lecture: lec };
@@ -452,7 +530,7 @@ app.get('/api/lectures/:lectureId/screen-contents', optionalAuth, async (req, re
 
 // ─── AI SUMMARY & STUDY NOTES ROUTES ─────────────────────────────────────────
 
-app.post('/api/lectures/:lectureId/summary', optionalAuth, async (req, res) => {
+app.post('/api/lectures/:lectureId/summary', aiLimiter, optionalAuth, async (req, res) => {
   try {
     const access = await checkLectureAccess(req.params.lectureId, req.user);
     if (!access.allowed) return res.status(access.status).json({ error: access.error });
@@ -493,7 +571,7 @@ app.get('/api/lectures/:lectureId/summary', optionalAuth, async (req, res) => {
   }
 });
 
-app.post('/api/lectures/:lectureId/notes', optionalAuth, async (req, res) => {
+app.post('/api/lectures/:lectureId/notes', aiLimiter, optionalAuth, async (req, res) => {
   try {
     const access = await checkLectureAccess(req.params.lectureId, req.user);
     if (!access.allowed) return res.status(access.status).json({ error: access.error });
@@ -539,9 +617,12 @@ app.get('/api/lectures/:lectureId/notes', optionalAuth, async (req, res) => {
 
 // ─── SEARCHABLE TRANSCRIPT & CHAPTERS ROUTES ─────────────────────────────────
 
-app.get('/api/lectures/:lectureId/transcript', async (req, res) => {
+app.get('/api/lectures/:lectureId/transcript', optionalAuth, async (req, res) => {
   try {
-    const lec = await get('SELECT * FROM lectures WHERE id = ? OR room_id = ?', [req.params.lectureId, req.params.lectureId]);
+    const access = await checkLectureAccess(req.params.lectureId, req.user);
+    if (!access.allowed) return res.status(access.status).json({ error: access.error });
+
+    const lec = access.lecture;
     const resolvedId = lec?.id || req.params.lectureId;
     const roomId = lec?.room_id || req.params.lectureId;
 
@@ -556,12 +637,15 @@ app.get('/api/lectures/:lectureId/transcript', async (req, res) => {
   }
 });
 
-app.get('/api/lectures/:lectureId/transcript/search', async (req, res) => {
+app.get('/api/lectures/:lectureId/transcript/search', optionalAuth, async (req, res) => {
   try {
+    const access = await checkLectureAccess(req.params.lectureId, req.user);
+    if (!access.allowed) return res.status(access.status).json({ error: access.error });
+
     const query = (req.query.q || '').trim();
     if (!query) return res.json({ matches: [] });
 
-    const lec = await get('SELECT * FROM lectures WHERE id = ? OR room_id = ?', [req.params.lectureId, req.params.lectureId]);
+    const lec = access.lecture;
     const resolvedId = lec?.id || req.params.lectureId;
     const roomId = lec?.room_id || req.params.lectureId;
 
@@ -577,8 +661,11 @@ app.get('/api/lectures/:lectureId/transcript/search', async (req, res) => {
   }
 });
 
-app.get('/api/lectures/:lectureId/chapters', async (req, res) => {
+app.get('/api/lectures/:lectureId/chapters', aiLimiter, optionalAuth, async (req, res) => {
   try {
+    const access = await checkLectureAccess(req.params.lectureId, req.user);
+    if (!access.allowed) return res.status(access.status).json({ error: access.error });
+
     const chapters = await generateLectureChapters(req.params.lectureId);
     res.json({ chapters });
   } catch (err) {
@@ -588,12 +675,17 @@ app.get('/api/lectures/:lectureId/chapters', async (req, res) => {
 
 // ─── RAG Q&A ROUTE ("Ask This Lecture") ──────────────────────────────────────
 
-app.post('/api/lectures/:lectureId/ask', async (req, res) => {
+app.post('/api/lectures/:lectureId/ask', aiLimiter, optionalAuth, async (req, res) => {
   try {
-    const { question } = req.body;
-    if (!question) return res.status(400).json({ error: 'Question is required' });
+    const access = await checkLectureAccess(req.params.lectureId, req.user);
+    if (!access.allowed) return res.status(access.status).json({ error: access.error });
 
-    const result = await askLecture(req.params.lectureId, question);
+    const { question } = req.body;
+    if (!question || typeof question !== 'string' || !question.trim()) {
+      return res.status(400).json({ error: 'Valid question text is required' });
+    }
+
+    const result = await askLecture(req.params.lectureId, question.trim().slice(0, 1000));
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -697,12 +789,16 @@ app.get('/api/lectures/:lectureId/domain-context', optionalAuth, async (req, res
   }
 });
 
-app.post('/api/lectures/:lectureId/domain-context/confirm', optionalAuth, async (req, res) => {
+app.post('/api/lectures/:lectureId/domain-context/confirm', authenticateToken, async (req, res) => {
   try {
     const access = await checkLectureAccess(req.params.lectureId, req.user);
     if (!access.allowed) return res.status(access.status).json({ error: access.error });
 
     const lec = access.lecture;
+    if (req.user.role !== 'ADMIN' && lec.host_id !== req.user.id) {
+      return res.status(403).json({ error: 'Forbidden: only the lecture host or an admin can confirm domain context' });
+    }
+
     const { subject, confirmedDomain } = req.body;
     const finalSubject = (subject || confirmedDomain || '').trim();
 
@@ -770,10 +866,19 @@ app.get('/api/lectures/:lectureId/metadata-consistency', optionalAuth, async (re
 
 // ─── QUIZ & FLASHCARDS ROUTES ────────────────────────────────────────────────
 
-app.get('/api/lectures/:lectureId/quiz', async (req, res) => {
+app.get('/api/lectures/:lectureId/quiz', aiLimiter, optionalAuth, async (req, res) => {
   try {
+    const access = await checkLectureAccess(req.params.lectureId, req.user);
+    if (!access.allowed) return res.status(access.status).json({ error: access.error });
+
     const result = await generateQuiz(req.params.lectureId);
-    res.json(result);
+    const isTeacherOrAdmin = req.user && (req.user.role === 'ADMIN' || req.user.id === access.lecture.host_id);
+    const questions = (result.questions || []).map((q) => {
+      if (isTeacherOrAdmin) return q;
+      const { correct_answer, correctAnswer, explanation, ...safeQ } = q;
+      return safeQ;
+    });
+    res.json({ ...result, questions });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -789,8 +894,11 @@ app.post('/api/lectures/:lectureId/quiz/submit', authenticateToken, async (req, 
   }
 });
 
-app.get('/api/lectures/:lectureId/flashcards', async (req, res) => {
+app.get('/api/lectures/:lectureId/flashcards', aiLimiter, optionalAuth, async (req, res) => {
   try {
+    const access = await checkLectureAccess(req.params.lectureId, req.user);
+    if (!access.allowed) return res.status(access.status).json({ error: access.error });
+
     const cards = await generateFlashcards(req.params.lectureId);
     res.json({ flashcards: cards });
   } catch (err) {
@@ -810,8 +918,11 @@ app.post('/api/lectures/:lectureId/flashcards/progress', authenticateToken, asyn
 
 // ─── PDF DOWNLOAD ROUTES ─────────────────────────────────────────────────────
 
-app.get('/api/lectures/:lectureId/pdf/transcript', async (req, res) => {
+app.get('/api/lectures/:lectureId/pdf/transcript', aiLimiter, optionalAuth, async (req, res) => {
   try {
+    const access = await checkLectureAccess(req.params.lectureId, req.user);
+    if (!access.allowed) return res.status(access.status).json({ error: access.error });
+
     const { filePath, filename } = await generateTranscriptPdf(req.params.lectureId);
     res.download(filePath, filename);
   } catch (err) {
@@ -819,8 +930,11 @@ app.get('/api/lectures/:lectureId/pdf/transcript', async (req, res) => {
   }
 });
 
-app.get('/api/lectures/:lectureId/pdf/summary', async (req, res) => {
+app.get('/api/lectures/:lectureId/pdf/summary', aiLimiter, optionalAuth, async (req, res) => {
   try {
+    const access = await checkLectureAccess(req.params.lectureId, req.user);
+    if (!access.allowed) return res.status(access.status).json({ error: access.error });
+
     const { filePath, filename } = await generateSummaryPdf(req.params.lectureId);
     res.download(filePath, filename);
   } catch (err) {
@@ -828,8 +942,11 @@ app.get('/api/lectures/:lectureId/pdf/summary', async (req, res) => {
   }
 });
 
-app.get('/api/lectures/:lectureId/pdf/study-notes', async (req, res) => {
+app.get('/api/lectures/:lectureId/pdf/study-notes', aiLimiter, optionalAuth, async (req, res) => {
   try {
+    const access = await checkLectureAccess(req.params.lectureId, req.user);
+    if (!access.allowed) return res.status(access.status).json({ error: access.error });
+
     const { filePath, filename } = await generateStudyNotesPdf(req.params.lectureId);
     res.download(filePath, filename);
   } catch (err) {
@@ -839,13 +956,19 @@ app.get('/api/lectures/:lectureId/pdf/study-notes', async (req, res) => {
 
 // ─── RECORDING ROUTES ────────────────────────────────────────────────────────
 
-app.post('/api/lectures/:lectureId/recording', upload.single('recording'), async (req, res) => {
+app.post('/api/lectures/:lectureId/recording', authenticateToken, upload.single('recording'), async (req, res) => {
   try {
+    const lec = await get('SELECT id, host_id FROM lectures WHERE id = ? OR room_id = ?', [req.params.lectureId, req.params.lectureId]);
+    if (!lec) return res.status(404).json({ error: 'Lecture not found' });
+    if (req.user.role !== 'ADMIN' && lec.host_id !== req.user.id) {
+      return res.status(403).json({ error: 'Forbidden: only the lecture host or an admin can upload recordings' });
+    }
+
     if (!req.file) return res.status(400).json({ error: 'No recording file uploaded' });
 
     const duration = parseFloat(req.body.duration) || 0;
     const result = await saveRecording({
-      lectureId: req.params.lectureId,
+      lectureId: lec.id,
       tempFilePath: req.file.path,
       durationSeconds: duration,
       mimeType: req.file.mimetype || 'video/webm',
@@ -857,9 +980,12 @@ app.post('/api/lectures/:lectureId/recording', upload.single('recording'), async
   }
 });
 
-app.get('/api/lectures/:lectureId/recording/stream', async (req, res) => {
+app.get('/api/lectures/:lectureId/recording/stream', optionalAuth, async (req, res) => {
   try {
-    const rec = await get('SELECT * FROM recordings WHERE lecture_id = ?', [req.params.lectureId]);
+    const access = await checkLectureAccess(req.params.lectureId, req.user);
+    if (!access.allowed) return res.status(access.status).json({ error: access.error });
+
+    const rec = await get('SELECT * FROM recordings WHERE lecture_id = ?', [access.lecture.id]);
     if (!rec) return res.status(404).json({ error: 'Recording not found' });
     streamRecording(req, res, rec.file_path, rec.mime_type);
   } catch (err) {
@@ -867,9 +993,12 @@ app.get('/api/lectures/:lectureId/recording/stream', async (req, res) => {
   }
 });
 
-app.get('/api/lectures/:lectureId/recording', async (req, res) => {
+app.get('/api/lectures/:lectureId/recording', optionalAuth, async (req, res) => {
   try {
-    const rec = await get('SELECT * FROM recordings WHERE lecture_id = ?', [req.params.lectureId]);
+    const access = await checkLectureAccess(req.params.lectureId, req.user);
+    if (!access.allowed) return res.status(access.status).json({ error: access.error });
+
+    const rec = await get('SELECT * FROM recordings WHERE lecture_id = ?', [access.lecture.id]);
     res.json({ recording: rec || null });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -915,12 +1044,18 @@ app.get('/api/admin/stats', authenticateToken, requireRole('ADMIN'), async (req,
 });
 
 // Backward compatible transcript endpoint
-app.get('/transcript/:roomId', async (req, res) => {
+app.get('/transcript/:roomId', optionalAuth, async (req, res) => {
   try {
-    const record = await get('SELECT * FROM transcripts WHERE lecture_id = ?', [req.params.roomId]);
+    const access = await checkLectureAccess(req.params.roomId, req.user);
+    if (!access.allowed) return res.status(access.status).json({ error: access.error });
+
+    const resolvedId = access.lecture.id;
+    const roomCode = access.lecture.room_id || req.params.roomId;
+
+    const record = await get('SELECT * FROM transcripts WHERE lecture_id = ? OR lecture_id = ?', [resolvedId, roomCode]);
     const segments = await all(
-      'SELECT * FROM transcript_segments WHERE lecture_id = ? ORDER BY start_time ASC',
-      [req.params.roomId]
+      'SELECT * FROM transcript_segments WHERE lecture_id = ? OR lecture_id = ? ORDER BY start_time ASC',
+      [resolvedId, roomCode]
     );
     if (!record && segments.length === 0) {
       return res.status(404).json({ error: 'Transcript not found' });
@@ -968,6 +1103,10 @@ io.on('connection', (socket) => {
       if (data.token && !currentUser) {
         currentUser = verifyToken(data.token);
       }
+      if (!currentUser || (currentUser.role !== 'TEACHER' && currentUser.role !== 'ADMIN')) {
+        return callback({ error: 'Authentication required: only teachers and administrators can host lecture sessions.' });
+      }
+
       let rawId = (data.roomId || '').trim();
       if (!rawId || rawId.toLowerCase() === 'undefined' || rawId.toLowerCase() === 'null' || rawId.toLowerCase() === 'new') {
         rawId = null;
@@ -987,7 +1126,7 @@ io.on('connection', (socket) => {
       let lecture = await get('SELECT * FROM lectures WHERE room_id = ?', [roomId]);
       if (!lecture) {
         const lectureId = 'lec_' + uuidv4().slice(0, 8);
-        const hostId = currentUser?.id || 'user_teacher_1';
+        const hostId = currentUser.id;
 
         await run(
           `INSERT INTO lectures (id, room_id, title, description, host_id, status, visibility, password_hash)
@@ -1004,7 +1143,7 @@ io.on('connection', (socket) => {
       socket.join(roomId);
       currentRoomId = roomId;
 
-      console.log(`[Room ${roomId}] Host connected: ${socket.id} (${currentUser?.name || 'Teacher'})`);
+      console.log(`[Room ${roomId}] Host connected: ${socket.id} (${currentUser.name})`);
       callback({ roomId, lectureId: lecture.id, rtpCapabilities: room.rtpCapabilities });
     } catch (err) {
       console.error('[createRoom] Error:', err);
@@ -1385,14 +1524,22 @@ io.on('connection', (socket) => {
   socket.on('endLecture', async ({ roomId, lectureId: reqLecId }, callback) => {
     try {
       const room = rooms.get(roomId);
-      const lecture = await get('SELECT id, room_id FROM lectures WHERE id = ? OR room_id = ?', [reqLecId || roomId, roomId || reqLecId]);
+      const lecture = await get('SELECT id, room_id, host_id FROM lectures WHERE id = ? OR room_id = ?', [reqLecId || roomId, roomId || reqLecId]);
       const lectureId = lecture ? lecture.id : (room?.lectureId || roomId);
       const resolvedRoomId = lecture ? lecture.room_id : roomId;
+
+      const isAuthorized =
+        (currentUser && lecture && (currentUser.id === lecture.host_id || currentUser.role === 'ADMIN')) ||
+        room?.getHost()?.id === socket.id;
+
+      if (!isAuthorized) {
+        return callback?.({ error: 'Forbidden: only the lecture host or an administrator can end the session.' });
+      }
 
       await run(`UPDATE lectures SET status = 'ENDED', end_time = CURRENT_TIMESTAMP WHERE id = ? OR room_id = ?`, [lectureId, resolvedRoomId]);
       await run(`UPDATE transcripts SET status = 'complete', updated_at = CURRENT_TIMESTAMP WHERE lecture_id = ? OR lecture_id = ?`, [lectureId, resolvedRoomId]);
 
-      console.log(`[Socket endLecture] Room ${resolvedRoomId} / Lecture ${lectureId} ended.`);
+      console.log(`[Socket endLecture] Room ${resolvedRoomId} / Lecture ${lectureId} ended by authorized host.`);
 
       // Broadcast to room that lecture has ended
       io.to(resolvedRoomId).emit('lectureEnded', { roomId: resolvedRoomId, lectureId, status: 'ENDED' });
@@ -1448,6 +1595,11 @@ io.on('connection', (socket) => {
       const room = rooms.get(currentRoomId);
       if (!room) return callback?.({ error: 'Room not found' });
 
+      if (!message || typeof message !== 'string' || !message.trim()) {
+        return callback?.({ error: 'Message cannot be empty' });
+      }
+
+      const cleanMessage = message.trim().slice(0, 1000);
       const msgId = 'msg_' + uuidv4().slice(0, 8);
       const senderName = currentUser?.name || (room.getHost()?.id === socket.id ? 'Teacher' : 'Student');
       const timestamp = Date.now();
@@ -1457,7 +1609,7 @@ io.on('connection', (socket) => {
         await run(
           `INSERT INTO chat_messages (id, lecture_id, user_id, sender_name, message, timestamp)
            VALUES (?, ?, ?, ?, ?, ?)`,
-          [msgId, room.lectureId, currentUser?.id || null, senderName, message, timestamp]
+          [msgId, room.lectureId, currentUser?.id || null, senderName, cleanMessage, timestamp]
         );
       }
 
@@ -1466,7 +1618,7 @@ io.on('connection', (socket) => {
         peerId: socket.id,
         senderName,
         senderRole: currentUser?.role || (room.getHost()?.id === socket.id ? 'TEACHER' : 'STUDENT'),
-        message,
+        message: cleanMessage,
         timestamp,
       });
 
@@ -1478,11 +1630,11 @@ io.on('connection', (socket) => {
 
   // ── Real-Time Multilingual Translation ────────────────────────────────────
   socket.on('translateText', async ({ text, targetLang }, callback) => {
-    if (!text || !text.trim() || !targetLang || targetLang === 'en') {
-      return callback?.({ translatedText: text });
+    if (!text || typeof text !== 'string' || !text.trim() || !targetLang || targetLang === 'en') {
+      return callback?.({ translatedText: text || '' });
     }
 
-    const trimmed = text.trim();
+    const trimmed = text.trim().slice(0, 500);
     const cacheKey = `${targetLang}_${trimmed.toLowerCase()}`;
     if (translationCache.has(cacheKey)) {
       return callback?.({ translatedText: translationCache.get(cacheKey) });
@@ -1548,7 +1700,11 @@ io.on('connection', (socket) => {
 
 // ─── START ───────────────────────────────────────────────────────────────────
 
-bootstrap().catch((err) => {
-  console.error('[Server] Fatal error during bootstrap:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  bootstrap().catch((err) => {
+    console.error('[Server] Fatal error during bootstrap:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = { app, httpServer, io, bootstrap };

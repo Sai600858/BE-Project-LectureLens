@@ -16,27 +16,49 @@ const path = require('path');
 /**
  * Safely evaluates a math expression for x
  */
+/**
+ * Safely evaluates a math expression for x with strict token validation
+ */
 function evaluateMathExpression(fnStr, x) {
   if (typeof fnStr === 'function') {
     return fnStr(x);
   }
   if (!fnStr || typeof fnStr !== 'string') return 0;
-  
-  const clean = fnStr
+  if (fnStr.length > 300) return 0;
+
+  const trimmed = fnStr.trim();
+  if (!trimmed) return 0;
+
+  // Security Hardening: Strict whitelist of mathematical symbols and functions.
+  // Reject any character that could lead to code execution or prototype pollution.
+  const clean = trimmed
     .toLowerCase()
     .replace(/\^/g, '**')
-    .replace(/sin\(/g, 'Math.sin(')
-    .replace(/cos\(/g, 'Math.cos(')
-    .replace(/tan\(/g, 'Math.tan(')
-    .replace(/sqrt\(/g, 'Math.sqrt(')
-    .replace(/log\(/g, 'Math.log(')
-    .replace(/exp\(/g, 'Math.exp(')
-    .replace(/pi/g, 'Math.PI')
-    .replace(/e\b/g, 'Math.E');
+    .replace(/\bsin\b(?=\s*\()/g, 'Math.sin')
+    .replace(/\bcos\b(?=\s*\()/g, 'Math.cos')
+    .replace(/\btan\b(?=\s*\()/g, 'Math.tan')
+    .replace(/\bsqrt\b(?=\s*\()/g, 'Math.sqrt')
+    .replace(/\blog\b(?=\s*\()/g, 'Math.log')
+    .replace(/\bexp\b(?=\s*\()/g, 'Math.exp')
+    .replace(/\babs\b(?=\s*\()/g, 'Math.abs')
+    .replace(/\bpi\b/g, 'Math.PI')
+    .replace(/\be\b/g, 'Math.E');
+
+  // Verify that ONLY allowed tokens remain after removing known math symbols
+  const testAgainstWhitelist = clean
+    .replace(/Math\.(sin|cos|tan|sqrt|log|exp|abs|PI|E)/g, '')
+    .replace(/\b[0-9]+(\.[0-9]+)?\b/g, '')
+    .replace(/\bx\b/g, '')
+    .replace(/[\+\-\*\/\(\)\s\.]/g, '');
+
+  if (testAgainstWhitelist.length > 0) {
+    // Contains forbidden characters or identifiers
+    return 0;
+  }
 
   try {
-    const fn = new Function('x', `with(Math) { return (${clean}); }`);
-    const val = fn(x);
+    const fn = new Function('x', `"use strict"; return (${clean});`);
+    const val = fn(Number(x) || 0);
     return isFinite(val) ? val : 0;
   } catch (_) {
     return 0;

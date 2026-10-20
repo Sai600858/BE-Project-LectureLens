@@ -23,6 +23,9 @@ const DB_PATH = path.join(__dirname, '..', 'data', 'lecturelens.sqlite');
  */
 function invokePythonBridge(lectureId, timeoutMs = 15000) {
   return new Promise((resolve, reject) => {
+    if (!/^[a-zA-Z0-9_\-]+$/.test(String(lectureId))) {
+      return reject(new Error(`Invalid lectureId format: ${lectureId}`));
+    }
     const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
     const args = [
       BRIDGE_SCRIPT,
@@ -262,6 +265,7 @@ function formatSALKGContextForPrompt(salkgResult) {
 }
 
 module.exports = {
+  invokePythonBridge,
   getOrComputeSALKG,
   getAlignedVisualForSegment,
   getAlignedSegmentsForVisual,

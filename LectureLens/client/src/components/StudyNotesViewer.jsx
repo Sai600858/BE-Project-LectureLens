@@ -11,6 +11,12 @@
  * - Graceful fallback states
  */
 import React, { useEffect, useRef, useState } from 'react';
+import DOMPurify from 'dompurify';
+
+function sanitizeSvg(svgContent) {
+  if (!svgContent) return '';
+  return DOMPurify.sanitize(svgContent, { USE_PROFILES: { svg: true, svgFilters: true } });
+}
 
 /* ── KaTeX Loader Helper ─────────────────────────────────────────────────── */
 let katexLoaded = false;
@@ -91,7 +97,7 @@ function DiagramModal({ title, svg, image, caption, onClose }) {
         </div>
         <div style={styles.modalBody}>
           {svg ? (
-            <div dangerouslySetInnerHTML={{ __html: svg }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitizeSvg(svg) }} />
           ) : image ? (
             <img src={image} alt={title || 'Lecture Diagram'} style={{ maxWidth: '100%', maxHeight: '78vh', objectFit: 'contain', borderRadius: '8px' }} />
           ) : null}
@@ -141,7 +147,7 @@ function InlineVisualizationCard({ viz, onEnlarge }) {
       {svg ? (
         <div
           style={styles.svgContainer}
-          dangerouslySetInnerHTML={{ __html: svg }}
+          dangerouslySetInnerHTML={{ __html: sanitizeSvg(svg) }}
         />
       ) : imageUrl ? (
         <div style={styles.imgContainer} onClick={() => onEnlarge && onEnlarge({ ...viz, imageUrl })}>

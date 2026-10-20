@@ -27,16 +27,25 @@ const DB_PATH = path.join(__dirname, '..', 'data', 'lecturelens.sqlite');
  */
 function invokeGuardPipeline({ lectureId, artifact, contentType = 'rag_answer', domain = null, timeoutMs = 20000 }) {
   return new Promise((resolve, reject) => {
+    // Validate arguments to prevent subprocess argument injection
+    const safeLectureId = String(lectureId || '').trim();
+    if (!safeLectureId || !/^[a-zA-Z0-9_\-]+$/.test(safeLectureId)) {
+      return reject(new Error(`Invalid lecture ID format: ${lectureId}`));
+    }
+
+    const validContentTypes = ['rag_answer', 'summary', 'study_notes', 'quiz', 'flashcards', 'general'];
+    const safeContentType = validContentTypes.includes(contentType) ? contentType : 'rag_answer';
+
     const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
     const args = [
       GUARD_PIPELINE_SCRIPT,
       '--db', DB_PATH,
-      '--lecture-id', String(lectureId),
-      '--content-type', contentType,
+      '--lecture-id', safeLectureId,
+      '--content-type', safeContentType,
     ];
 
-    if (domain) {
-      args.push('--domain', domain);
+    if (domain && typeof domain === 'string' && /^[a-zA-Z0-9_\-\s]{1,50}$/.test(domain.trim())) {
+      args.push('--domain', domain.trim());
     }
 
     const guardSrc = path.join(PROJECT_ROOT, 'research_salkg_guard', 'src');
@@ -262,6 +271,7 @@ async function runGuardedGeneration({
 }
 
 module.exports = {
+  invokeGuardPipeline,
   validateWithSALKGGuard,
   runGuardedGeneration,
 };

@@ -31,13 +31,23 @@ public class AuthController {
         String email = body.get("email");
         String name = body.get("name");
         String password = body.get("password");
-        String roleStr = body.getOrDefault("role", "STUDENT");
+
+        if (email == null || !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Valid email address is required"));
+        }
+        if (name == null || name.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Name is required"));
+        }
+        if (password == null || password.length() < 8) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Password must be at least 8 characters"));
+        }
 
         if (userRepository.existsByEmail(email)) {
             return ResponseEntity.badRequest().body(Map.of("error", "Email already registered"));
         }
 
-        Role role = Role.valueOf(roleStr.toUpperCase());
+        // Public registration always defaults to STUDENT to prevent privilege escalation
+        Role role = Role.STUDENT;
         String userId = "usr_" + UUID.randomUUID().toString().substring(0, 8);
         User user = new User(userId, name, email, passwordEncoder.encode(password), role);
         userRepository.save(user);
