@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import RoomPage from './pages/RoomPage';
 import PostLectureHub from './pages/PostLectureHub';
+const VisualizationLab = React.lazy(() => import('./pages/VisualizationLab'));
 
 // Protected Route wrapper
 function ProtectedRoute({ children }) {
@@ -30,6 +31,23 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/lab"
+        element={
+          <ProtectedRoute>
+            <React.Suspense
+              fallback={
+                <div style={{ minHeight: '100vh', background: '#0b0f19', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8', fontFamily: 'sans-serif' }}>
+                  Loading 3D Educational Lab...
+                </div>
+              }
+            >
+              <VisualizationLab />
+            </React.Suspense>
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/visualize" element={<Navigate to="/lab" replace />} />
       <Route path="/room/:roomId" element={
           <ProtectedRoute>
             <RoomPage />

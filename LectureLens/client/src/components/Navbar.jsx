@@ -73,15 +73,26 @@ export default function Navbar({ customRightAction = null }) {
             Home
           </Link>
           {user && (
-            <Link
-              to="/dashboard"
-              style={{
-                ...styles.navLink,
-                ...(location.pathname === '/dashboard' ? styles.navLinkActive : {}),
-              }}
-            >
-              Dashboard
-            </Link>
+            <>
+              <Link
+                to="/dashboard"
+                style={{
+                  ...styles.navLink,
+                  ...(location.pathname === '/dashboard' ? styles.navLinkActive : {}),
+                }}
+              >
+                Dashboard
+              </Link>
+              <Link
+                to="/lab"
+                style={{
+                  ...styles.navLink,
+                  ...(location.pathname.startsWith('/lab') ? styles.navLinkActive : {}),
+                }}
+              >
+                🔬 3D Lab
+              </Link>
+            </>
           )}
         </nav>
 
@@ -149,13 +160,22 @@ export default function Navbar({ customRightAction = null }) {
               🏠 Home
             </Link>
             {user && (
-              <Link
-                to="/dashboard"
-                style={styles.mobileNavLink}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                📊 Dashboard
-              </Link>
+              <>
+                <Link
+                  to="/dashboard"
+                  style={styles.mobileNavLink}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  📊 Dashboard
+                </Link>
+                <Link
+                  to="/lab"
+                  style={styles.mobileNavLink}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  🔬 3D Lab
+                </Link>
+              </>
             )}
 
             {user ? (

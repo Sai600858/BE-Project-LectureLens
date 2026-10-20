@@ -259,6 +259,45 @@ export default function Dashboard() {
             {joinError && <p style={styles.errorText} role="alert">⚠️ {joinError}</p>}
           </section>
 
+          {/* ── 3D Educational Visualization Lab Quick Access Banner ── */}
+          <section
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '16px',
+              padding: '16px 20px',
+              borderRadius: '16px',
+              background: 'linear-gradient(135deg, rgba(8, 145, 178, 0.12) 0%, rgba(99, 102, 241, 0.08) 100%)',
+              border: '1px solid rgba(56, 189, 248, 0.25)',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: '240px', flex: 1 }}>
+              <span style={{ fontSize: '28px' }} aria-hidden="true">🔬</span>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                  <span style={{ fontWeight: '700', fontSize: '15px', color: '#f8fafc' }}>
+                    Interactive 3D Educational Lab
+                  </span>
+                  <Badge variant="cyan" size="sm">New</Badge>
+                  <Badge variant="neutral" size="sm">Three.js</Badge>
+                </div>
+                <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8', lineHeight: 1.4 }}>
+                  Master complex CS concepts in 3D: Raft leader elections & quorum arithmetic, AVL tree rotations, and neural network matrix multiplication.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="md"
+              onClick={() => navigate('/lab')}
+              aria-label="Launch 3D Educational Visualization Lab"
+            >
+              Open 3D Lab →
+            </Button>
+          </section>
+
           {/* ── Search & Filter Controls ── */}
           <section style={styles.controlBar} className="dash-control-bar">
             {/* Search Input */}
