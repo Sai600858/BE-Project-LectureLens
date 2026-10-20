@@ -12,39 +12,35 @@ import java.util.Date;
 @Component
 public class JwtUtils {
 
-    @Value("${lecturelens.jwt.secret}")
+    @Value("${lecturelens.jwt.secret:lecturelens_secure_persistent_key_2026_super_secret}")
     private String jwtSecret;
 
-    @Value("${lecturelens.jwt.expiration-ms}")
+    @Value("${lecturelens.jwt.expiration-ms:604800000}")
     private long jwtExpirationMs;
 
-    private Key getSigningKey() {
+    private Key getSignKey() {
         byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(String userId, String email, String role) {
+    public String generateToken(String userId, String email, String name, String role) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
+
         return Jwts.builder()
                 .setSubject(userId)
+                .claim("id", userId)
                 .claim("email", email)
+                .claim("name", name != null ? name : "")
                 .claim("role", role)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    private Key getSignKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-    }
-
-    public String getUserIdFromToken(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSignKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+    public String generateToken(String userId, String email, String role) {
+        return generateToken(userId, email, "", role);
     }
 
     public Claims getAllClaims(String token) {
@@ -55,8 +51,21 @@ public class JwtUtils {
                 .getBody();
     }
 
+    public String getUserIdFromToken(String token) {
+        Claims claims = getAllClaims(token);
+        String subject = claims.getSubject();
+        if (subject != null && !subject.isBlank()) {
+            return subject;
+        }
+        return claims.get("id", String.class);
+    }
+
     public String getEmailFromToken(String token) {
         return getAllClaims(token).get("email", String.class);
+    }
+
+    public String getNameFromToken(String token) {
+        return getAllClaims(token).get("name", String.class);
     }
 
     public String getRoleFromToken(String token) {
@@ -64,6 +73,9 @@ public class JwtUtils {
     }
 
     public boolean validateToken(String token) {
+        if (token == null || token.isBlank()) {
+            return false;
+        }
         try {
             Jwts.parserBuilder().setSigningKey(getSignKey()).build().parseClaimsJws(token);
             return true;

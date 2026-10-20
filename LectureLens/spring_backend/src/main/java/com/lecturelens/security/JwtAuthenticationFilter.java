@@ -1,6 +1,5 @@
 package com.lecturelens.security;
 
-import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,18 +28,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
+            String token = authHeader.substring(7).trim();
             if (jwtUtils.validateToken(token)) {
-                Claims claims = jwtUtils.getAllClaims(token);
-                String userId = claims.getSubject();
-                String role = claims.get("role", String.class);
+                String userId = jwtUtils.getUserIdFromToken(token);
+                String role = jwtUtils.getRoleFromToken(token);
 
-                SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userId, null, Collections.singletonList(authority));
+                if (userId != null && role != null) {
+                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role.trim().toUpperCase());
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(userId, null, Collections.singletonList(authority));
 
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             }
         }
 
