@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { authApi } from '../services/api';
+import Navbar from '../components/Navbar';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -24,36 +25,18 @@ export default function Home() {
 
   return (
     <div style={styles.container}>
-      {/* Top Glassmorphism Navigation */}
-      <header style={styles.navbar}>
-        <div style={styles.brand}>
-          <div style={styles.brandIconWrap}>🎓</div>
-          <div>
-            <span style={styles.brandLogo}>LectureLens</span>
-            <span style={styles.brandSub}>AI Multimodal Classroom</span>
-          </div>
-        </div>
-
-        <div style={styles.navActions}>
-          <div style={styles.systemStatusPill}>
-            <span style={styles.statusDot}></span>
+      {/* Top Reusable Responsive Navigation */}
+      <Navbar
+        customRightAction={
+          <div style={styles.systemStatusPill} aria-label="System status: SFU Media Engine Ready">
+            <span style={styles.statusDot} aria-hidden="true"></span>
             <span>SFU Media Engine Ready</span>
           </div>
-          {user ? (
-            <Link to="/dashboard" style={styles.dashBtn}>
-              Instructor Dashboard ({user.name}) →
-            </Link>
-          ) : (
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <Link to="/login" style={styles.loginBtn}>Sign In</Link>
-              <Link to="/register" style={styles.registerBtn}>Get Started Free</Link>
-            </div>
-          )}
-        </div>
-      </header>
+        }
+      />
 
       {/* Hero Section */}
-      <main style={styles.hero}>
+      <main id="main-content" style={styles.hero}>
         <div style={styles.badgeWrap}>
           <span style={styles.badgePulse}></span>
           <span style={styles.badgeText}>Next-Generation Educational Intelligence & SFU Streaming</span>
@@ -78,10 +61,11 @@ export default function Home() {
             </span>
           </div>
 
-          <div style={styles.joinRow}>
+          <div className="home-join-row" style={styles.joinRow}>
             <div style={styles.inputContainer}>
-              <span style={styles.inputIcon}>🔑</span>
+              <span style={styles.inputIcon} aria-hidden="true">🔑</span>
               <input
+                aria-label="Enter 8-digit room code"
                 placeholder="Enter 8-digit Room Code (e.g. MATH101)"
                 value={joinCode}
                 onChange={(e) => {
@@ -89,10 +73,15 @@ export default function Home() {
                   setError('');
                 }}
                 onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
-                style={styles.input}
+                style={{ ...styles.input, minHeight: '44px' }}
               />
             </div>
-            <button onClick={handleJoin} style={styles.joinBtn}>
+            <button
+              onClick={handleJoin}
+              className="home-join-btn"
+              style={{ ...styles.joinBtn, minHeight: '44px' }}
+              aria-label="Join live classroom session"
+            >
               Join Live Class →
             </button>
           </div>
