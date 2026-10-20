@@ -1,50 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi, lectureApi } from '../services/api';
+import Navbar from '../components/Navbar';
+import Badge from '../components/Badge';
+import Button from '../components/Button';
 
-/* ─── Inject responsive CSS once ─── */
-const RESPONSIVE_CSS = `
-  @media (max-width: 640px) {
-    .dash-nav { padding: 10px 14px !important; flex-wrap: wrap; gap: 8px; }
-    .dash-badge { display: none !important; }
-    .dash-main { padding: 16px 12px !important; }
-    .dash-hero { padding: 20px 16px !important; }
-    .dash-hero-title { font-size: 20px !important; }
-    .dash-hero-subtitle { font-size: 12px !important; }
-    .dash-hero-actions { flex-direction: column !important; align-items: stretch !important; }
-    .dash-join-box { flex-direction: column !important; }
-    .dash-join-input { width: 100% !important; }
-    .dash-join-btn { width: 100% !important; padding: 12px !important; font-size: 14px !important; }
-    .dash-create-btn { width: 100% !important; padding: 12px !important; font-size: 14px !important; text-align: center; }
-    .dash-section-header { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
-    .dash-section-btns { align-self: flex-end; }
-    .dash-grid { grid-template-columns: 1fr !important; }
-    .dash-card-actions { flex-direction: column !important; }
-    .dash-card-actions button { width: 100% !important; padding: 10px !important; font-size: 13px !important; }
-    .dash-modal { padding: 20px 14px !important; }
-    .dash-modal-btns { flex-direction: column !important; gap: 8px !important; }
-    .dash-modal-btns button { width: 100% !important; padding: 10px !important; }
-    .dash-user-info { display: none !important; }
-    .dash-logout { font-size: 13px !important; padding: 8px 14px !important; }
-  }
-  @media (max-width: 900px) {
-    .dash-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important; }
-  }
-  .dash-card:hover { border-color: #38bdf866 !important; box-shadow: 0 0 0 1px #38bdf822; transform: translateY(-1px); transition: all 0.15s ease; }
-  .dash-open-btn:hover { opacity: 0.88; }
-  .dash-delete-btn:hover { color: #ef4444 !important; background: #ef444415 !important; }
-  .dash-refresh-btn:hover { background: #3f3f46 !important; color: #e4e4e7 !important; }
-  .dash-clear-btn:hover { background: #ef444433 !important; }
-`;
-
-function injectCSS() {
-  if (document.getElementById('dash-responsive-css')) return;
-  const el = document.createElement('style');
-  el.id = 'dash-responsive-css';
-  el.textContent = RESPONSIVE_CSS;
-  document.head.appendChild(el);
-}
-
+/**
+ * Premium, mobile-first Dashboard tailored to student vs. instructor roles.
+ * Provides live room status, real-time filtering, accessible touch controls,
+ * and zero horizontal scroll overflow.
+ */
 export default function Dashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(authApi.getCurrentUser());
@@ -52,7 +17,11 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [joinCode, setJoinCode] = useState('');
   const [joinError, setJoinError] = useState('');
-  const [deleteConfirm, setDeleteConfirm] = useState(null); // lectureId to confirm delete
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  // Search & Filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('ALL'); // 'ALL' | 'LIVE' | 'COMPLETED' | 'PUBLIC' | 'PRIVATE'
 
   // Create lecture modal
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -61,8 +30,12 @@ export default function Dashboard() {
   const [visibility, setVisibility] = useState('PUBLIC');
   const [createLoading, setCreateLoading] = useState(false);
 
+  // Room code copy state
+  const [copiedCodeId, setCopiedCodeId] = useState(null);
+
+  const isTeacher = user?.role === 'TEACHER' || user?.role === 'ADMIN';
+
   useEffect(() => {
-    injectCSS();
     fetchLectures();
   }, []);
 
@@ -78,13 +51,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleLogout = () => {
-    authApi.logout();
-    navigate('/login');
-  };
-
-  const [copiedCodeId, setCopiedCodeId] = useState(null);
-
   const handleCopyCode = (e, code) => {
     e.stopPropagation();
     if (!code) return;
@@ -94,7 +60,9 @@ export default function Dashboard() {
   };
 
   const handleClearAllLectures = async () => {
-    if (!window.confirm('Are you sure you want to delete ALL lecture history? This will permanently remove all sessions, transcripts, notes, and recordings.')) return;
+    if (!window.confirm('Are you sure you want to delete ALL lecture history? This will permanently remove all sessions, transcripts, notes, and recordings.')) {
+      return;
+    }
     try {
       await lectureApi.clearAllLectures();
       setLectures([]);
@@ -119,7 +87,7 @@ export default function Dashboard() {
     if (!title.trim()) return;
     try {
       setCreateLoading(true);
-      const newLec = await lectureApi.createLecture({ title, description, visibility });
+      const newLec = await lectureApi.createLecture({ title: title.trim(), description: description.trim(), visibility });
       setShowCreateModal(false);
       setTitle('');
       setDescription('');
@@ -128,7 +96,7 @@ export default function Dashboard() {
       navigate(`/room/${targetRoomId}?role=host`);
     } catch (err) {
       if (err.response?.status === 401 || err.response?.status === 403) {
-        alert('Your instructor session has expired. Please sign in again.');
+        alert('Your session has expired. Please sign in again.');
         authApi.logout();
         navigate('/login');
         return;
@@ -141,8 +109,8 @@ export default function Dashboard() {
 
   const handleJoinByCode = () => {
     const code = joinCode.trim().toUpperCase();
-    if (!code) return setJoinError('Please enter the room code');
-    if (code.length < 4) return setJoinError('Code is too short');
+    if (!code) return setJoinError('Please enter a room code');
+    if (code.length < 4) return setJoinError('Code must be at least 4 characters');
     const matched = lectures.find((l) => (l.room_id || l.roomId) === code);
     if (matched && (matched.status === 'ENDED' || matched.status === 'COMPLETED')) {
       navigate(`/lecture/${matched.id || matched.lectureId}/review`);
@@ -151,7 +119,6 @@ export default function Dashboard() {
     navigate(`/room/${code}?role=participant`);
   };
 
-  /** Open lecture card based on its status */
   const handleOpenLecture = (lec) => {
     const lecId = lec.id || lec.lectureId;
     const roomCode = lec.room_id || lec.roomId;
@@ -160,7 +127,6 @@ export default function Dashboard() {
     } else if (lec.status === 'LIVE') {
       navigate(`/room/${roomCode}?role=${isTeacher ? 'host' : 'participant'}`);
     } else {
-      // SCHEDULED or default
       if (isTeacher) {
         navigate(`/room/${roomCode}?role=host`);
       } else {
@@ -169,250 +135,484 @@ export default function Dashboard() {
     }
   };
 
-  const isTeacher = user?.role === 'TEACHER' || user?.role === 'ADMIN';
+  // Real filtered lectures derived from local state
+  const filteredLectures = useMemo(() => {
+    return lectures.filter((lec) => {
+      // Status & visibility filter
+      if (activeFilter === 'LIVE' && lec.status !== 'LIVE') return false;
+      if (activeFilter === 'COMPLETED' && lec.status !== 'ENDED' && lec.status !== 'COMPLETED') return false;
+      if (activeFilter === 'PUBLIC' && lec.visibility !== 'PUBLIC') return false;
+      if (activeFilter === 'PRIVATE' && lec.visibility !== 'PRIVATE') return false;
 
-  const statusLabel = (s) => {
-    if (s === 'LIVE') return { text: '🔴 LIVE', bg: '#ef444433', color: '#f87171' };
-    if (s === 'ENDED' || s === 'COMPLETED') return { text: '✅ DONE', bg: '#10b98133', color: '#34d399' };
-    return { text: '⏳ SCHEDULED', bg: '#64748b33', color: '#94a3b8' };
-  };
+      // Text search
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const t = (lec.title || '').toLowerCase();
+        const d = (lec.description || '').toLowerCase();
+        const h = (lec.host_name || '').toLowerCase();
+        const c = (lec.room_id || lec.roomId || '').toLowerCase();
+        return t.includes(q) || d.includes(q) || h.includes(q) || c.includes(q);
+      }
+      return true;
+    });
+  }, [lectures, activeFilter, searchQuery]);
+
+  // Real metric counters from actual backend data
+  const liveCount = useMemo(() => lectures.filter((l) => l.status === 'LIVE').length, [lectures]);
+  const completedCount = useMemo(
+    () => lectures.filter((l) => l.status === 'ENDED' || l.status === 'COMPLETED').length,
+    [lectures]
+  );
 
   return (
-    <div style={S.container}>
-      {/* ── Navbar ── */}
-      <nav style={S.nav} className="dash-nav">
-        <div style={S.navBrand}>
-          <span style={S.logo}>🎓 LectureLens</span>
-          <span style={S.badge} className="dash-badge">Multimodal AI Platform</span>
-        </div>
-        <div style={S.navUser}>
-          <div style={S.userInfo} className="dash-user-info">
-            <span style={S.userName}>{user?.name || 'Guest'}</span>
-            <span style={roleTagStyle(user?.role)}>{user?.role || 'STUDENT'}</span>
-          </div>
-          <button onClick={handleLogout} style={S.logoutBtn} className="dash-logout">
-            Logout
-          </button>
-        </div>
-      </nav>
+    <div style={styles.pageContainer}>
+      <Navbar />
 
-      <main style={S.main} className="dash-main">
-        {/* ── Hero Card ── */}
-        <div style={S.heroCard} className="dash-hero">
-          <div>
-            <h1 style={S.heroTitle} className="dash-hero-title">Interactive Multimodal Lectures</h1>
-            <p style={S.heroSubtitle} className="dash-hero-subtitle">
-              Live WebRTC video · Speech-to-text · Whiteboard AI · Gemini Study synthesis
-            </p>
-          </div>
-
-          <div style={S.heroActions} className="dash-hero-actions">
-            {isTeacher && (
-              <button onClick={() => setShowCreateModal(true)} style={S.createBtn} className="dash-create-btn">
-                ➕ Create &amp; Start Lecture
-              </button>
-            )}
-            <div style={S.joinBox} className="dash-join-box">
-              <input
-                placeholder="Enter Room Code to join"
-                value={joinCode}
-                onChange={(e) => { setJoinCode(e.target.value); setJoinError(''); }}
-                onKeyDown={(e) => e.key === 'Enter' && handleJoinByCode()}
-                style={S.joinInput}
-                className="dash-join-input"
-              />
-              <button onClick={handleJoinByCode} style={S.joinBtn} className="dash-join-btn">
-                Join Room
-              </button>
-            </div>
-            {joinError && <span style={S.errorText}>{joinError}</span>}
-          </div>
-        </div>
-
-        {/* ── Section Header ── */}
-        <div style={S.sectionHeader} className="dash-section-header">
-          <h2 style={S.sectionTitle}>📚 Lecture History &amp; Sessions</h2>
-          <div style={{ display: 'flex', gap: '8px' }} className="dash-section-btns">
-            <button onClick={fetchLectures} style={S.refreshBtn} className="dash-refresh-btn">🔄 Refresh</button>
-            {isTeacher && lectures.length > 0 && (
-              <button onClick={handleClearAllLectures} style={S.clearBtn} className="dash-clear-btn">🗑️ Clear All</button>
-            )}
-          </div>
-        </div>
-
-        {/* ── Lecture Grid ── */}
-        {loading ? (
-          <div style={S.loading}>Loading lectures…</div>
-        ) : lectures.length === 0 ? (
-          <div style={S.emptyState}>
-            <span style={{ fontSize: '40px' }}>📭</span>
-            <p style={{ margin: 0 }}>No lectures recorded yet.</p>
-            {isTeacher && (
-              <button onClick={() => setShowCreateModal(true)} style={S.createBtn}>
-                Host your first lecture
-              </button>
-            )}
-          </div>
-        ) : (
-          <div style={S.grid} className="dash-grid">
-            {lectures.map((lec) => {
-              const lecId = lec.id || lec.lectureId;
-              const roomCode = lec.room_id || lec.roomId;
-              const status = statusLabel(lec.status);
-              const isLive = lec.status === 'LIVE';
-              const isDone = lec.status === 'ENDED' || lec.status === 'COMPLETED';
-
-              return (
-                <div
-                  key={lecId}
-                  style={S.card}
-                  className="dash-card"
-                  onClick={() => handleOpenLecture(lec)}
-                  title={isDone ? 'Open AI Notes & Review' : isLive ? 'Join live lecture' : 'Open lecture'}
-                >
-                  {/* Card Top: status + delete */}
-                  <div style={S.cardTop}>
-                    <span style={{ ...S.statusPill, background: status.bg, color: status.color }}>
-                      {status.text}
-                    </span>
-                    {isTeacher && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setDeleteConfirm(lecId); }}
-                        style={S.deleteBtn}
-                        className="dash-delete-btn"
-                        title="Delete lecture"
-                        aria-label="Delete lecture"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Title & Desc */}
-                  <h3 style={S.cardTitle}>{lec.title}</h3>
-                  <p style={S.cardDesc}>{lec.description || 'Multimodal university lecture session.'}</p>
-
-                  {/* Meta */}
-                  <div style={S.metaRow}>
-                    <span>👨‍🏫 {lec.host_name || 'Instructor'}</span>
-                    <span>🗓️ {new Date(lec.created_at).toLocaleDateString()}</span>
-                  </div>
-
-                  {/* Room Code row (only for non-done) */}
-                  {!isDone && roomCode && (
-                    <div style={S.codeRow} onClick={(e) => e.stopPropagation()}>
-                      <span style={S.codeBadge}>CODE: {roomCode}</span>
-                      <button
-                        onClick={(e) => handleCopyCode(e, roomCode)}
-                        style={S.copyBtn}
-                        title="Copy room code"
-                      >
-                        {copiedCodeId === roomCode ? '✓ Copied!' : '📋 Copy'}
-                      </button>
-                    </div>
+      <main id="main-content" style={styles.mainContent}>
+        <div style={styles.container}>
+          {/* ── Command Center Hero ── */}
+          <section style={styles.heroCard} className="glass-panel-elevated">
+            <div style={styles.heroTopRow}>
+              <div>
+                <div style={styles.roleTagWrap}>
+                  <Badge variant={isTeacher ? 'cyan' : 'emerald'} size="md">
+                    {isTeacher ? 'Instructor Command Center' : 'Student Learning Hub'}
+                  </Badge>
+                  {liveCount > 0 && (
+                    <Badge variant="rose" size="md" icon="🔴">
+                      {liveCount} Session{liveCount > 1 ? 's' : ''} Live Now
+                    </Badge>
                   )}
+                </div>
 
-                  {/* Action buttons */}
-                  <div style={S.actionRow} className="dash-card-actions" onClick={(e) => e.stopPropagation()}>
-                    {isLive ? (
-                      <>
-                        <button
-                          onClick={() => navigate(`/room/${roomCode}?role=${isTeacher ? 'host' : 'participant'}`)}
-                          style={S.liveBtn}
-                        >
-                          🔴 {isTeacher ? 'Return to Room' : 'Join Live'}
-                        </button>
-                        <button
-                          onClick={() => navigate(`/lecture/${lecId}/review`)}
-                          style={S.reviewBtn}
-                        >
-                          📖 AI Notes
-                        </button>
-                      </>
-                    ) : isDone ? (
-                      <>
-                        <button
-                          onClick={() => navigate(`/lecture/${lecId}/review`)}
-                          style={S.reviewHighlightBtn}
-                        >
-                          📖 Open AI Notes &amp; Review
-                        </button>
+                <h1 style={styles.heroTitle}>
+                  {isTeacher ? 'Host & Orchestrate AI Classrooms' : 'Your Enrolled Classrooms & Notes'}
+                </h1>
+                <p style={styles.heroSubtitle}>
+                  {isTeacher
+                    ? 'Launch live sessions with real-time speech transcription, whiteboard OCR, and automated study notes synthesis.'
+                    : 'Join ongoing interactive lectures, review synthesized KaTeX notes, take quizzes, and master spaced-repetition flashcards.'}
+                </p>
+              </div>
+
+              {/* Primary Action Button */}
+              {isTeacher && (
+                <div style={styles.heroPrimaryAction}>
+                  <Button
+                    onClick={() => setShowCreateModal(true)}
+                    variant="primary"
+                    size="lg"
+                    icon="➕"
+                    style={{ whiteSpace: 'nowrap', width: '100%' }}
+                  >
+                    Host New Lecture
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Access Join Box & Live Stats */}
+            <div style={styles.heroMetricsAndJoin}>
+              {/* Join Box */}
+              <div style={styles.joinBox} className="dash-join-box">
+                <div style={styles.joinInputWrap}>
+                  <span style={styles.joinInputIcon} aria-hidden="true">🔑</span>
+                  <input
+                    aria-label="Enter room code to join"
+                    placeholder="Enter 8-digit Room Code (e.g. MATH101)"
+                    value={joinCode}
+                    onChange={(e) => {
+                      setJoinCode(e.target.value);
+                      if (joinError) setJoinError('');
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleJoinByCode()}
+                    style={styles.joinInput}
+                  />
+                </div>
+                <Button
+                  onClick={handleJoinByCode}
+                  variant="emerald"
+                  size="md"
+                  style={{ minWidth: '120px' }}
+                >
+                  Join Room
+                </Button>
+              </div>
+
+              {/* Real Metric Indicators */}
+              <div style={styles.metricsPillsRow}>
+                <div style={styles.metricPill}>
+                  <span style={styles.metricNumber}>{lectures.length}</span>
+                  <span style={styles.metricLabel}>Total Sessions</span>
+                </div>
+                <div style={styles.metricPill}>
+                  <span style={{ ...styles.metricNumber, color: '#f87171' }}>{liveCount}</span>
+                  <span style={styles.metricLabel}>Live Now</span>
+                </div>
+                <div style={styles.metricPill}>
+                  <span style={{ ...styles.metricNumber, color: '#34d399' }}>{completedCount}</span>
+                  <span style={styles.metricLabel}>Study Ready</span>
+                </div>
+              </div>
+            </div>
+
+            {joinError && <p style={styles.errorText} role="alert">⚠️ {joinError}</p>}
+          </section>
+
+          {/* ── Search & Filter Controls ── */}
+          <section style={styles.controlBar} className="dash-control-bar">
+            {/* Search Input */}
+            <div style={styles.searchWrap}>
+              <span style={styles.searchIcon} aria-hidden="true">🔍</span>
+              <input
+                type="search"
+                aria-label="Search lectures by title or instructor"
+                placeholder="Search lectures by title, topic, or instructor..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={styles.searchInput}
+              />
+            </div>
+
+            {/* Filter Pills */}
+            <div style={styles.filterGroup} role="group" aria-label="Filter lectures">
+              {[
+                { id: 'ALL', label: `All (${lectures.length})` },
+                { id: 'LIVE', label: `🔴 Live (${liveCount})` },
+                { id: 'COMPLETED', label: `✅ Done (${completedCount})` },
+                { id: 'PUBLIC', label: 'Public' },
+                { id: 'PRIVATE', label: 'Private' },
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setActiveFilter(f.id)}
+                  style={{
+                    ...styles.filterChip,
+                    ...(activeFilter === f.id ? styles.filterChipActive : {}),
+                  }}
+                  aria-pressed={activeFilter === f.id}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Auxiliary actions */}
+            <div style={styles.auxActions}>
+              <button
+                onClick={fetchLectures}
+                style={styles.refreshBtn}
+                title="Refresh lecture list"
+                aria-label="Refresh lecture list"
+              >
+                🔄 Refresh
+              </button>
+              {isTeacher && lectures.length > 0 && (
+                <button
+                  onClick={handleClearAllLectures}
+                  style={styles.clearBtn}
+                  title="Clear all lecture history"
+                  aria-label="Clear all lecture history"
+                >
+                  🗑️ Clear All
+                </button>
+              )}
+            </div>
+          </section>
+
+          {/* ── Lecture Cards Grid ── */}
+          <section aria-label="Lecture Sessions List">
+            {loading ? (
+              <div style={styles.loadingState}>
+                <div style={styles.spinner} aria-hidden="true" />
+                <p style={{ color: '#94a3b8', fontSize: '15px' }}>Retrieving lecture sessions…</p>
+              </div>
+            ) : filteredLectures.length === 0 ? (
+              <div style={styles.emptyState} className="glass-panel">
+                <span style={{ fontSize: '48px', marginBottom: '8px' }} aria-hidden="true">📭</span>
+                <h2 style={styles.emptyTitle}>
+                  {searchQuery || activeFilter !== 'ALL'
+                    ? 'No lectures match your search or filter'
+                    : 'No lecture sessions recorded yet'}
+                </h2>
+                <p style={styles.emptyDesc}>
+                  {searchQuery || activeFilter !== 'ALL'
+                    ? 'Try clearing the search query or changing your filter criteria.'
+                    : isTeacher
+                    ? 'Click the button below to start broadcasting your first live classroom session.'
+                    : 'Check back soon or ask your instructor for an 8-digit room code to join.'}
+                </p>
+                {isTeacher && !searchQuery && activeFilter === 'ALL' && (
+                  <Button
+                    onClick={() => setShowCreateModal(true)}
+                    variant="primary"
+                    size="md"
+                    icon="➕"
+                    style={{ marginTop: '16px' }}
+                  >
+                    Host Your First Lecture
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div style={styles.lectureGrid} className="dash-lecture-grid">
+                {filteredLectures.map((lec) => {
+                  const lecId = lec.id || lec.lectureId;
+                  const roomCode = lec.room_id || lec.roomId;
+                  const isLive = lec.status === 'LIVE';
+                  const isDone = lec.status === 'ENDED' || lec.status === 'COMPLETED';
+
+                  return (
+                    <article
+                      key={lecId}
+                      style={styles.lectureCard}
+                      className="glass-panel dash-card"
+                      onClick={() => handleOpenLecture(lec)}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleOpenLecture(lec);
+                        }
+                      }}
+                      aria-label={`${lec.title}, status: ${lec.status}`}
+                    >
+                      {/* Card Top: Badges & Delete */}
+                      <div style={styles.cardHeader}>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          <Badge
+                            variant={isLive ? 'rose' : isDone ? 'emerald' : 'amber'}
+                            size="sm"
+                          >
+                            {isLive ? '🔴 LIVE' : isDone ? '✅ COMPLETED' : '⏳ SCHEDULED'}
+                          </Badge>
+                          <Badge variant="neutral" size="sm">
+                            {lec.visibility || 'PUBLIC'}
+                          </Badge>
+                        </div>
+
                         {isTeacher && (
                           <button
-                            onClick={() => navigate(`/room/${roomCode}?role=host`)}
-                            style={S.reopenBtn}
-                            title="Reopen as host"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirm(lecId);
+                            }}
+                            style={styles.deleteCardBtn}
+                            title="Delete this lecture session"
+                            aria-label={`Delete ${lec.title}`}
                           >
-                            🔁 Reopen
+                            ✕
                           </button>
                         )}
-                      </>
-                    ) : (
-                      <>
-                        {isTeacher ? (
-                          <button
-                            onClick={() => navigate(`/room/${roomCode}?role=host`)}
-                            style={S.startBtn}
-                          >
-                            ▶️ Start Lecture
-                          </button>
-                        ) : (
-                          <span style={S.scheduledLabel}>⏳ Not started yet</span>
-                        )}
-                        <button
-                          onClick={() => navigate(`/lecture/${lecId}/review`)}
-                          style={S.reviewBtn}
+                      </div>
+
+                      {/* Title & Description */}
+                      <h3 style={styles.cardTitle}>{lec.title}</h3>
+                      <p style={styles.cardDesc}>
+                        {lec.description || 'Multimodal university lecture session.'}
+                      </p>
+
+                      {/* Instructor & Date Meta */}
+                      <div style={styles.metaRow}>
+                        <span style={styles.metaItem}>
+                          <span aria-hidden="true">👨‍🏫</span> {lec.host_name || 'Instructor'}
+                        </span>
+                        <span style={styles.metaItem}>
+                          <span aria-hidden="true">🗓️</span>{' '}
+                          {lec.created_at ? new Date(lec.created_at).toLocaleDateString() : 'Active'}
+                        </span>
+                      </div>
+
+                      {/* Room Code Badge (when active) */}
+                      {roomCode && (
+                        <div
+                          style={styles.codeRow}
+                          onClick={(e) => e.stopPropagation()}
+                          role="region"
+                          aria-label="Room code"
                         >
-                          📖 Overview
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                          <div style={styles.codeText}>
+                            <span style={styles.codePrefix}>CODE:</span>
+                            <span style={styles.codeValue}>{roomCode}</span>
+                          </div>
+                          <button
+                            onClick={(e) => handleCopyCode(e, roomCode)}
+                            style={styles.copyBtn}
+                            aria-label={`Copy room code ${roomCode}`}
+                          >
+                            {copiedCodeId === roomCode ? '✓ Copied!' : '📋 Copy'}
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Action Controls */}
+                      <div
+                        style={styles.actionRow}
+                        className="dash-card-actions"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {isLive ? (
+                          <>
+                            <Button
+                              onClick={() =>
+                                navigate(`/room/${roomCode}?role=${isTeacher ? 'host' : 'participant'}`)
+                              }
+                              variant="emerald"
+                              size="sm"
+                              style={{ flex: 1 }}
+                            >
+                              🔴 {isTeacher ? 'Return to Room' : 'Join Live'}
+                            </Button>
+                            <Button
+                              onClick={() => navigate(`/lecture/${lecId}/review`)}
+                              variant="secondary"
+                              size="sm"
+                              style={{ flex: 1 }}
+                            >
+                              📖 AI Notes
+                            </Button>
+                          </>
+                        ) : isDone ? (
+                          <>
+                            <Button
+                              onClick={() => navigate(`/lecture/${lecId}/review`)}
+                              variant="primary"
+                              size="sm"
+                              style={{ flex: 1 }}
+                            >
+                              📖 AI Notes & Review
+                            </Button>
+                            {isTeacher && (
+                              <Button
+                                onClick={() => navigate(`/room/${roomCode}?role=host`)}
+                                variant="secondary"
+                                size="sm"
+                                title="Reopen live classroom session"
+                              >
+                                🔁 Reopen
+                              </Button>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            {isTeacher ? (
+                              <Button
+                                onClick={() => navigate(`/room/${roomCode}?role=host`)}
+                                variant="primary"
+                                size="sm"
+                                style={{ flex: 1 }}
+                              >
+                                ▶️ Start Lecture
+                              </Button>
+                            ) : (
+                              <span style={styles.scheduledNotice}>⏳ Session scheduled</span>
+                            )}
+                            <Button
+                              onClick={() => navigate(`/lecture/${lecId}/review`)}
+                              variant="secondary"
+                              size="sm"
+                              style={{ flex: 1 }}
+                            >
+                              📖 Overview
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </div>
       </main>
 
       {/* ── Create Lecture Modal ── */}
       {showCreateModal && (
-        <div style={S.modalOverlay} onClick={() => setShowCreateModal(false)}>
-          <div style={S.modal} className="dash-modal" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={S.modalTitle}>Host a New Lecture</h3>
-              <button onClick={() => setShowCreateModal(false)} style={S.modalCloseBtn}>✕</button>
+        <div
+          style={styles.modalOverlay}
+          onClick={() => setShowCreateModal(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="create-lecture-title"
+        >
+          <div style={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <h2 id="create-lecture-title" style={styles.modalTitle}>Host a New Lecture</h2>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                style={styles.modalCloseBtn}
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
             </div>
-            <form onSubmit={handleCreateLecture} style={S.modalForm}>
-              <label style={S.label}>Lecture Title *</label>
-              <input
-                placeholder="e.g. Distributed Systems & Consensus"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                style={S.input}
-                required
-                autoFocus
-              />
-              <label style={S.label}>Description / Syllabus</label>
-              <textarea
-                placeholder="Overview of topics, proofs, demos..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                style={S.textarea}
-                rows={3}
-              />
-              <label style={S.label}>Visibility</label>
-              <select value={visibility} onChange={(e) => setVisibility(e.target.value)} style={S.select}>
-                <option value="PUBLIC">Public – Any student can join</option>
-                <option value="PRIVATE">Private – Restricted access</option>
-              </select>
-              <div style={S.modalBtns} className="dash-modal-btns">
-                <button type="button" onClick={() => setShowCreateModal(false)} style={S.cancelBtn}>
+
+            <form onSubmit={handleCreateLecture} style={styles.modalForm}>
+              <div style={styles.modalField}>
+                <label htmlFor="create-title" style={styles.label}>
+                  Lecture Title <span style={styles.requiredStar}>*</span>
+                </label>
+                <input
+                  id="create-title"
+                  placeholder="e.g. Distributed Consensus & Raft Protocol"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  style={styles.input}
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div style={styles.modalField}>
+                <label htmlFor="create-desc" style={styles.label}>
+                  Description & Syllabus Topics
+                </label>
+                <textarea
+                  id="create-desc"
+                  placeholder="Summary of topics, algorithms, proofs, and expected learning outcomes..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  style={styles.textarea}
+                  rows={3}
+                />
+              </div>
+
+              <div style={styles.modalField}>
+                <label htmlFor="create-visibility" style={styles.label}>
+                  Access Visibility
+                </label>
+                <select
+                  id="create-visibility"
+                  value={visibility}
+                  onChange={(e) => setVisibility(e.target.value)}
+                  style={styles.select}
+                >
+                  <option value="PUBLIC">Public – Any enrolled student can join</option>
+                  <option value="PRIVATE">Private – Restricted to authorized participants</option>
+                </select>
+              </div>
+
+              <div style={styles.modalActions}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="md"
+                  onClick={() => setShowCreateModal(false)}
+                  style={{ flex: 1 }}
+                >
                   Cancel
-                </button>
-                <button type="submit" disabled={createLoading} style={S.submitBtn}>
-                  {createLoading ? 'Starting…' : '🚀 Start Live Lecture'}
-                </button>
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  loading={createLoading}
+                  disabled={createLoading}
+                  style={{ flex: 1 }}
+                >
+                  {createLoading ? 'Allocating Room…' : '🚀 Start Live Lecture'}
+                </Button>
               </div>
             </form>
           </div>
@@ -421,23 +621,43 @@ export default function Dashboard() {
 
       {/* ── Delete Confirmation Modal ── */}
       {deleteConfirm && (
-        <div style={S.modalOverlay} onClick={() => setDeleteConfirm(null)}>
-          <div style={{ ...S.modal, maxWidth: '380px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontSize: '36px', textAlign: 'center', marginBottom: '12px' }}>🗑️</div>
-            <h3 style={{ ...S.modalTitle, textAlign: 'center', marginBottom: '8px' }}>Delete Lecture?</h3>
-            <p style={{ fontSize: '13px', color: '#a1a1aa', textAlign: 'center', marginBottom: '20px' }}>
-              This will permanently remove the session, transcript, notes, and all related data.
+        <div
+          style={styles.modalOverlay}
+          onClick={() => setDeleteConfirm(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-confirm-title"
+        >
+          <div style={{ ...styles.modalCard, maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: '36px', textAlign: 'center', marginBottom: '8px' }} aria-hidden="true">
+              🗑️
+            </div>
+            <h2 id="delete-confirm-title" style={{ ...styles.modalTitle, textAlign: 'center' }}>
+              Delete Lecture Session?
+            </h2>
+            <p style={styles.deleteWarningText}>
+              This action permanently removes the session, transcript segments, AI study notes, and quiz records.
+              This cannot be undone.
             </p>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={() => setDeleteConfirm(null)} style={{ ...S.cancelBtn, flex: 1 }}>
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDeleteLecture(deleteConfirm)}
-                style={{ ...S.submitBtn, flex: 1, background: '#dc2626' }}
+            <div style={styles.modalActions}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="md"
+                onClick={() => setDeleteConfirm(null)}
+                style={{ flex: 1 }}
               >
-                Delete
-              </button>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                size="md"
+                onClick={() => handleDeleteLecture(deleteConfirm)}
+                style={{ flex: 1 }}
+              >
+                Permanently Delete
+              </Button>
             </div>
           </div>
         </div>
@@ -446,177 +666,484 @@ export default function Dashboard() {
   );
 }
 
-/* ── Role tag style helper ── */
-function roleTagStyle(role) {
-  return {
-    fontSize: '10px',
-    fontWeight: 'bold',
-    padding: '2px 6px',
-    borderRadius: '4px',
-    background: role === 'TEACHER' ? '#3b82f633' : role === 'ADMIN' ? '#f59e0b33' : '#10b98133',
-    color: role === 'TEACHER' ? '#60a5fa' : role === 'ADMIN' ? '#fbbf24' : '#34d399',
-  };
-}
-
-/* ── Styles ── */
-const S = {
-  container: { minHeight: '100vh', background: '#09090b', color: '#f4f4f5', fontFamily: 'system-ui, sans-serif' },
-
-  nav: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '14px 28px', background: '#18181b', borderBottom: '1px solid #27272a',
+const styles = {
+  pageContainer: {
+    minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    background: 'var(--bg-dark, #080c14)',
   },
-  navBrand: { display: 'flex', alignItems: 'center', gap: '10px' },
-  logo: { fontSize: '20px', fontWeight: '800', color: '#38bdf8' },
-  badge: {
-    fontSize: '11px', background: '#0284c733', color: '#38bdf8',
-    padding: '3px 8px', borderRadius: '999px', border: '1px solid #0284c766',
+  mainContent: {
+    flex: 1,
+    padding: '24px 16px 64px',
   },
-  navUser: { display: 'flex', alignItems: 'center', gap: '12px' },
-  userInfo: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' },
-  userName: { fontSize: '14px', fontWeight: '600', color: '#fff' },
-  logoutBtn: {
-    background: '#27272a', border: '1px solid #3f3f46', color: '#a1a1aa',
-    padding: '7px 14px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer',
-    minHeight: '36px',
+  container: {
+    maxWidth: '1280px',
+    margin: '0 auto',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '24px',
   },
-
-  main: { maxWidth: '1200px', margin: '0 auto', padding: '28px 20px' },
-
   heroCard: {
-    background: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)',
-    border: '1px solid #312e81', borderRadius: '16px',
-    padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '32px',
+    padding: '28px 24px',
+    borderRadius: '20px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
   },
-  heroTitle: { fontSize: '26px', fontWeight: '800', color: '#fff', marginBottom: '6px', margin: '0 0 6px' },
-  heroSubtitle: { fontSize: '14px', color: '#cbd5e1', maxWidth: '680px', lineHeight: 1.6, margin: 0 },
-  heroActions: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
-  createBtn: {
-    background: '#3b82f6', color: '#fff', border: 'none',
-    padding: '11px 22px', borderRadius: '8px', fontWeight: '700', fontSize: '14px',
-    cursor: 'pointer', minHeight: '44px',
+  heroTopRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: '20px',
+    flexWrap: 'wrap',
   },
-  joinBox: { display: 'flex', gap: '8px' },
+  roleTagWrap: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    marginBottom: '12px',
+    flexWrap: 'wrap',
+  },
+  heroTitle: {
+    fontSize: '28px',
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: '-0.025em',
+    marginBottom: '8px',
+  },
+  heroSubtitle: {
+    fontSize: '14.5px',
+    color: '#94a3b8',
+    lineHeight: 1.55,
+    maxWidth: '780px',
+    margin: 0,
+  },
+  heroPrimaryAction: {
+    alignSelf: 'center',
+    minWidth: '200px',
+  },
+  heroMetricsAndJoin: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '20px',
+    paddingTop: '16px',
+    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+    flexWrap: 'wrap',
+  },
+  joinBox: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    flex: 1,
+    minWidth: '280px',
+    maxWidth: '540px',
+  },
+  joinInputWrap: {
+    flex: 1,
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  joinInputIcon: {
+    position: 'absolute',
+    left: '12px',
+    fontSize: '14px',
+    color: '#64748b',
+    pointerEvents: 'none',
+  },
   joinInput: {
-    background: '#18181b', border: '1px solid #3f3f46', borderRadius: '8px',
-    padding: '10px 14px', color: '#fff', fontSize: '14px', width: '200px', outline: 'none',
+    width: '100%',
+    paddingLeft: '38px',
+    background: 'rgba(8, 12, 20, 0.8)',
+    border: '1px solid #1e293b',
+    borderRadius: '10px',
+    color: '#ffffff',
+    fontSize: '13.5px',
     minHeight: '44px',
   },
-  joinBtn: {
-    background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px',
-    padding: '10px 18px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', minHeight: '44px',
+  metricsPillsRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    flexWrap: 'wrap',
   },
-  errorText: { color: '#f87171', fontSize: '12px', display: 'block', width: '100%', marginTop: '-4px' },
-
-  sectionHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' },
-  sectionTitle: { fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 },
+  metricPill: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '8px 16px',
+    background: 'rgba(15, 23, 42, 0.6)',
+    border: '1px solid rgba(255, 255, 255, 0.07)',
+    borderRadius: '10px',
+    minWidth: '85px',
+  },
+  metricNumber: {
+    fontSize: '18px',
+    fontWeight: '800',
+    color: '#38bdf8',
+    lineHeight: 1.2,
+  },
+  metricLabel: {
+    fontSize: '11px',
+    color: '#94a3b8',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+  },
+  errorText: {
+    color: '#f87171',
+    fontSize: '12.5px',
+    fontWeight: '600',
+    margin: '-8px 0 0',
+  },
+  controlBar: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '16px',
+    flexWrap: 'wrap',
+  },
+  searchWrap: {
+    position: 'relative',
+    flex: 1,
+    minWidth: '260px',
+    maxWidth: '440px',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: '12px',
+    fontSize: '14px',
+    color: '#64748b',
+    pointerEvents: 'none',
+  },
+  searchInput: {
+    width: '100%',
+    paddingLeft: '38px',
+    background: 'rgba(15, 23, 42, 0.8)',
+    border: '1px solid #1e293b',
+    borderRadius: '10px',
+    color: '#ffffff',
+    fontSize: '13.5px',
+    minHeight: '42px',
+  },
+  filterGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    flexWrap: 'wrap',
+  },
+  filterChip: {
+    background: 'rgba(255, 255, 255, 0.05)',
+    color: '#94a3b8',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: '8px',
+    padding: '6px 12px',
+    fontSize: '12.5px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    minHeight: '36px',
+    transition: 'all 0.16s',
+  },
+  filterChipActive: {
+    background: 'rgba(56, 189, 248, 0.14)',
+    color: '#38bdf8',
+    borderColor: 'rgba(56, 189, 248, 0.4)',
+  },
+  auxActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
   refreshBtn: {
-    background: '#27272a', color: '#a1a1aa', border: '1px solid #3f3f46',
-    borderRadius: '6px', padding: '7px 14px', fontSize: '12px', cursor: 'pointer', minHeight: '36px',
+    background: 'rgba(255, 255, 255, 0.06)',
+    color: '#cbd5e1',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    padding: '6px 12px',
+    borderRadius: '8px',
+    fontSize: '12.5px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    minHeight: '36px',
   },
   clearBtn: {
-    background: '#ef444422', color: '#f87171', border: '1px solid #ef444455',
-    borderRadius: '6px', padding: '7px 14px', fontSize: '12px', fontWeight: '600',
-    cursor: 'pointer', minHeight: '36px',
+    background: 'rgba(239, 68, 68, 0.12)',
+    color: '#f87171',
+    border: '1px solid rgba(239, 68, 68, 0.25)',
+    padding: '6px 12px',
+    borderRadius: '8px',
+    fontSize: '12.5px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    minHeight: '36px',
   },
-
-  loading: { textAlign: 'center', color: '#71717a', padding: '60px', fontSize: '15px' },
+  loadingState: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '64px 16px',
+    gap: '12px',
+  },
+  spinner: {
+    width: '32px',
+    height: '32px',
+    border: '3px solid rgba(56, 189, 248, 0.2)',
+    borderTopColor: '#38bdf8',
+    borderRadius: '50%',
+    animation: 'spin 0.7s linear infinite',
+  },
   emptyState: {
-    textAlign: 'center', padding: '60px 20px', background: '#18181b',
-    borderRadius: '12px', border: '1px dashed #27272a', color: '#71717a',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px',
+    textAlign: 'center',
+    padding: '56px 20px',
+    borderRadius: '16px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    maxWidth: '560px',
+    margin: '32px auto',
   },
-
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '18px' },
-
-  card: {
-    background: '#18181b', border: '1px solid #27272a', borderRadius: '14px',
-    padding: '18px', display: 'flex', flexDirection: 'column', gap: '10px',
-    cursor: 'pointer', transition: 'all 0.15s ease', position: 'relative',
+  emptyTitle: {
+    fontSize: '18px',
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: '6px',
   },
-  cardTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  statusPill: { fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '999px' },
-  deleteBtn: {
-    background: 'transparent', color: '#52525b', border: 'none',
-    fontSize: '14px', cursor: 'pointer', padding: '4px 8px', borderRadius: '6px',
-    minWidth: '32px', minHeight: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+  emptyDesc: {
+    fontSize: '14px',
+    color: '#94a3b8',
+    lineHeight: 1.55,
+    margin: 0,
+    maxWidth: '440px',
   },
-  cardTitle: { fontSize: '16px', fontWeight: '700', color: '#fff', lineHeight: 1.4, margin: 0 },
-  cardDesc: { fontSize: '13px', color: '#a1a1aa', lineHeight: 1.5, flex: 1, margin: 0 },
+  lectureGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+    gap: '20px',
+  },
+  lectureCard: {
+    padding: '20px',
+    borderRadius: '16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    cursor: 'pointer',
+    transition: 'transform 0.18s, border-color 0.18s, box-shadow 0.18s',
+  },
+  cardHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '10px',
+  },
+  deleteCardBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: '#64748b',
+    width: '28px',
+    height: '28px',
+    padding: 0,
+    borderRadius: '6px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '14px',
+    boxShadow: 'none',
+  },
+  cardTitle: {
+    fontSize: '17px',
+    fontWeight: '700',
+    color: '#ffffff',
+    lineHeight: 1.3,
+    margin: '2px 0 0',
+  },
+  cardDesc: {
+    fontSize: '13px',
+    color: '#94a3b8',
+    lineHeight: 1.5,
+    margin: 0,
+    flex: 1,
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
+  },
   metaRow: {
-    display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#71717a',
-    borderTop: '1px solid #27272a', paddingTop: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    fontSize: '12px',
+    color: '#64748b',
+    paddingTop: '6px',
+    borderTop: '1px solid rgba(255, 255, 255, 0.05)',
   },
-  codeRow: { display: 'flex', alignItems: 'center', gap: '8px' },
-  codeBadge: {
-    fontFamily: 'monospace', fontSize: '12px', background: '#27272a',
-    padding: '3px 10px', borderRadius: '4px', color: '#38bdf8', letterSpacing: '1px',
+  metaItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+  },
+  codeRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    background: 'rgba(15, 23, 42, 0.7)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: '8px',
+    padding: '6px 10px',
+  },
+  codeText: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+  },
+  codePrefix: {
+    fontSize: '11px',
+    color: '#64748b',
+    fontWeight: '700',
+  },
+  codeValue: {
+    fontFamily: 'var(--font-mono)',
+    fontSize: '13px',
+    color: '#38bdf8',
+    fontWeight: '700',
+    letterSpacing: '0.04em',
   },
   copyBtn: {
-    background: '#27272a', color: '#38bdf8', border: '1px solid #38bdf855',
-    borderRadius: '4px', padding: '3px 8px', fontSize: '11px', fontWeight: '600', cursor: 'pointer',
+    background: 'rgba(255, 255, 255, 0.06)',
+    color: '#cbd5e1',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '6px',
+    padding: '4px 10px',
+    fontSize: '11.5px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    minHeight: '28px',
+    boxShadow: 'none',
   },
-
-  actionRow: { display: 'flex', gap: '8px', marginTop: '2px' },
-  liveBtn: {
-    flex: 2, background: '#dc2626', color: '#fff', border: 'none',
-    borderRadius: '8px', padding: '9px 12px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', minHeight: '40px',
+  actionRow: {
+    display: 'flex',
+    gap: '8px',
+    marginTop: '4px',
   },
-  startBtn: {
-    flex: 2, background: '#16a34a', color: '#fff', border: 'none',
-    borderRadius: '8px', padding: '9px 12px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', minHeight: '40px',
+  scheduledNotice: {
+    fontSize: '12px',
+    color: '#94a3b8',
+    fontWeight: '600',
+    display: 'flex',
+    alignItems: 'center',
   },
-  reviewHighlightBtn: {
-    flex: 3, background: 'linear-gradient(135deg, #2563eb, #7c3aed)', color: '#fff', border: 'none',
-    borderRadius: '8px', padding: '9px 12px', fontSize: '13px', fontWeight: '700', cursor: 'pointer',
-    textAlign: 'center', boxShadow: '0 2px 8px rgba(37,99,235,0.3)', minHeight: '40px',
-  },
-  reviewBtn: {
-    flex: 1, background: '#0284c7', color: '#fff', border: 'none',
-    borderRadius: '8px', padding: '9px 12px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', minHeight: '40px',
-  },
-  reopenBtn: {
-    flex: 1, background: '#27272a', color: '#a1a1aa', border: '1px solid #3f3f46',
-    borderRadius: '8px', padding: '9px 10px', fontSize: '12px', fontWeight: '600', cursor: 'pointer',
-    textAlign: 'center', minHeight: '40px',
-  },
-  scheduledLabel: { flex: 1, fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', display: 'flex', alignItems: 'center' },
-
   modalOverlay: {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: '16px',
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(4, 7, 13, 0.82)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '16px',
+    zIndex: 1000,
   },
-  modal: {
-    background: '#18181b', border: '1px solid #27272a',
-    borderRadius: '16px', padding: '28px', width: '100%', maxWidth: '480px',
+  modalCard: {
+    width: '100%',
+    maxWidth: '520px',
+    background: '#0f172a',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: '18px',
+    padding: '28px',
+    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
   },
-  modalTitle: { fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 },
+  modalHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: '20px',
+  },
+  modalTitle: {
+    fontSize: '20px',
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: '-0.02em',
+    margin: 0,
+  },
   modalCloseBtn: {
-    background: 'transparent', border: 'none', color: '#71717a',
-    fontSize: '18px', cursor: 'pointer', padding: '4px 8px',
+    background: 'transparent',
+    border: 'none',
+    color: '#94a3b8',
+    fontSize: '18px',
+    width: '36px',
+    height: '36px',
+    cursor: 'pointer',
+    borderRadius: '6px',
+    boxShadow: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  modalForm: { display: 'flex', flexDirection: 'column', gap: '10px' },
-  label: { fontSize: '12px', fontWeight: '600', color: '#a1a1aa', marginBottom: '-4px' },
+  modalForm: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px',
+  },
+  modalField: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  label: {
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#e2e8f0',
+  },
+  requiredStar: {
+    color: '#f87171',
+  },
   input: {
-    background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px',
-    padding: '10px 12px', color: '#fff', fontSize: '14px', outline: 'none', minHeight: '42px',
+    background: 'rgba(8, 12, 20, 0.85)',
+    border: '1px solid #1e293b',
+    borderRadius: '10px',
+    padding: '11px 14px',
+    color: '#ffffff',
+    fontSize: '14px',
+    minHeight: '44px',
   },
   textarea: {
-    background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px',
-    padding: '10px 12px', color: '#fff', fontSize: '14px', outline: 'none', resize: 'vertical',
+    background: 'rgba(8, 12, 20, 0.85)',
+    border: '1px solid #1e293b',
+    borderRadius: '10px',
+    padding: '11px 14px',
+    color: '#ffffff',
+    fontSize: '14px',
+    resize: 'vertical',
+    fontFamily: 'var(--font-body)',
   },
   select: {
-    background: '#27272a', border: '1px solid #3f3f46', borderRadius: '8px',
-    padding: '10px 12px', color: '#fff', fontSize: '14px', outline: 'none', minHeight: '42px',
+    background: 'rgba(8, 12, 20, 0.85)',
+    border: '1px solid #1e293b',
+    borderRadius: '10px',
+    padding: '11px 14px',
+    color: '#ffffff',
+    fontSize: '14px',
+    minHeight: '44px',
+    cursor: 'pointer',
   },
-  modalBtns: { display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' },
-  cancelBtn: {
-    background: 'transparent', border: '1px solid #3f3f46', color: '#a1a1aa',
-    borderRadius: '8px', padding: '9px 18px', fontSize: '13px', cursor: 'pointer', minHeight: '40px',
+  modalActions: {
+    display: 'flex',
+    gap: '12px',
+    marginTop: '8px',
   },
-  submitBtn: {
-    background: '#2563eb', color: '#fff', border: 'none',
-    borderRadius: '8px', padding: '9px 20px', fontSize: '13px', fontWeight: '700',
-    cursor: 'pointer', minHeight: '40px',
+  deleteWarningText: {
+    fontSize: '13.5px',
+    color: '#94a3b8',
+    textAlign: 'center',
+    lineHeight: 1.5,
+    margin: '0 0 20px',
   },
 };

@@ -529,4 +529,62 @@ input::placeholder, textarea::placeholder {
   }
 }
 
+@media (max-width: 768px) {
+  .auth-split-layout {
+    flex-direction: column !important;
+    gap: 20px !important;
+  }
+  .auth-showcase-panel {
+    display: none !important;
+  }
+  .dash-control-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .dash-lecture-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .dash-join-box {
+    flex-direction: column !important;
+  }
+  .dash-join-box button {
+    width: 100% !important;
+  }
+  .dash-card-actions {
+    flex-direction: column !important;
+  }
+  .dash-card-actions button {
+    width: 100% !important;
+  }
+}
+
+/* Card hover and focus micro-interactions */
+.dash-card:hover {
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.12) !important;
+}
+
+.dash-card:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+
 
