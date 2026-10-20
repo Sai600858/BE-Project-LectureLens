@@ -1,0 +1,33 @@
+digraph "math_noisy_edge_cases" {
+  rankdir="LR";
+  node [shape=box, style="filled,rounded", fontname="Helvetica"];
+  edge [fontname="Helvetica", fontsize=10];
+
+  "node_edge_vis_01" [label="Polynomial Derivative: f(x) = x^2, \n(Formula)", fillcolor="#9C27B0"];
+  "node_edge_vis_02" [label="Trigonometric Derivative: \frac{d}{\n(Formula)", fillcolor="#9C27B0"];
+  "node_edge_vis_01_repeat" [label="Polynomial Derivative (Repeated): f\n(Formula)", fillcolor="#9C27B0"];
+  "node_edge_vis_03_noisy_ocr" [label="Trig Derv: d/dx[cos x] = -sin x -- \n(Formula)", fillcolor="#9C27B0"];
+  "node_edge_vis_04_contradiction" [label="Plot of Decreasing Function: Slope \n(ArchitectureComponent)", fillcolor="#CCCCCC"];
+  "node_edge_seg_01" [label="Today we revisit derivatives. Look \n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_look" [label="Look\n(Concept)", fillcolor="#4CAF50"];
+  "node_edge_seg_02" [label="Now we move forward to trigonometri\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_here" [label="Here\n(Concept)", fillcolor="#4CAF50"];
+  "node_edge_seg_03" [label="Let us go back to our earlier slide\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_states_nx_to_the_n_minus_1" [label="States Nx To The N Minus 1\n(Concept)", fillcolor="#4CAF50"];
+  "node_edge_seg_04" [label="Notice this noisy transcription: th\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_notice" [label="Notice\n(Concept)", fillcolor="#4CAF50"];
+  "node_edge_seg_05" [label="Now look closely at the curve on sc\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_this" [label="This\n(Concept)", fillcolor="#4CAF50"];
+
+  "node_edge_seg_01" -> "node_edge_vis_01" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_look" -> "node_edge_vis_01" [label="explains", style="solid", color="#333333"];
+  "node_edge_seg_02" -> "node_edge_vis_02" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_here" -> "node_edge_vis_02" [label="explains", style="solid", color="#333333"];
+  "node_edge_seg_03" -> "node_edge_vis_01_repeat" [label="corresponds_to", style="dashed", color="#D32F2F"];
+  "concept_states_nx_to_the_n_minus_1" -> "node_edge_vis_01_repeat" [label="explains", style="dashed", color="#D32F2F"];
+  "node_edge_seg_04" -> "node_edge_vis_03_noisy_ocr" [label="corresponds_to", style="dashed", color="#D32F2F"];
+  "concept_notice" -> "node_edge_vis_03_noisy_ocr" [label="explains", style="dashed", color="#D32F2F"];
+  "node_edge_seg_05" -> "node_edge_vis_04_contradiction" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_this" -> "node_edge_vis_04_contradiction" [label="explains", style="solid", color="#333333"];
+  "node_edge_vis_04_contradiction" -> "concept_this" [label="contradicts", style="solid", color="#333333"];
+}

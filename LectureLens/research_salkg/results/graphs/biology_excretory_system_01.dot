@@ -1,0 +1,39 @@
+digraph "biology_excretory_system_01" {
+  rankdir="LR";
+  node [shape=box, style="filled,rounded", fontname="Helvetica"];
+  edge [fontname="Helvetica", fontsize=10];
+
+  "node_bio_vis_01" [label="Types of Excretion based on Nitroge\n(VisualEvent)", fillcolor="#3F51B5"];
+  "node_bio_vis_02" [label="Anatomy of the Human Kidney. Dimens\n(VisualEvent)", fillcolor="#3F51B5"];
+  "node_bio_vis_03" [label="Internal Zonation of the Kidney. St\n(VisualEvent)", fillcolor="#3F51B5"];
+  "node_bio_seg_01" [label="Excretion is the biological process\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_excretion" [label="Excretion\n(Concept)", fillcolor="#4CAF50"];
+  "node_bio_seg_02" [label="The primary goal of excretion in hu\n(LectureSegment)", fillcolor="#607D8B"];
+  "node_bio_seg_03" [label="Looking at the types of excretion b\n(LectureSegment)", fillcolor="#607D8B"];
+  "node_bio_seg_04" [label="Understanding Homeostasis is a prer\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_understanding_homeostasis" [label="Understanding Homeostasis\n(Concept)", fillcolor="#4CAF50"];
+  "concept_homeostasis" [label="Homeostasis\n(Prerequisite)", fillcolor="#795548"];
+  "concept_human_kidney_and_renal_filtration_mechanisms" [label="Human Kidney And Renal Filtration M\n(Concept)", fillcolor="#4CAF50"];
+  "node_bio_seg_05" [label="Examining the anatomy of the human \n(LectureSegment)", fillcolor="#607D8B"];
+  "node_bio_seg_06" [label="The inner concave surface features \n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_hilum" [label="Hilum\n(Concept)", fillcolor="#4CAF50"];
+  "concept_renal_pelvis" [label="Renal Pelvis\n(Concept)", fillcolor="#4CAF50"];
+  "node_bio_seg_07" [label="Internally, the kidney is divided i\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_bertini" [label="Bertini\n(Concept)", fillcolor="#4CAF50"];
+  "node_bio_seg_08" [label="Most importantly, the functional un\n(LectureSegment)", fillcolor="#607D8B"];
+
+  "node_bio_seg_01" -> "node_bio_vis_01" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_excretion" -> "node_bio_vis_01" [label="explains", style="solid", color="#333333"];
+  "node_bio_seg_02" -> "node_bio_vis_01" [label="corresponds_to", style="solid", color="#333333"];
+  "node_bio_seg_03" -> "node_bio_vis_01" [label="corresponds_to", style="solid", color="#333333"];
+  "node_bio_seg_04" -> "node_bio_vis_01" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_understanding_homeostasis" -> "node_bio_vis_01" [label="explains", style="solid", color="#333333"];
+  "concept_homeostasis" -> "concept_human_kidney_and_renal_filtration_mechanisms" [label="requires_prerequisite", style="solid", color="#333333"];
+  "node_bio_seg_05" -> "node_bio_vis_02" [label="corresponds_to", style="solid", color="#333333"];
+  "node_bio_seg_06" -> "node_bio_vis_02" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_hilum" -> "node_bio_vis_02" [label="explains", style="solid", color="#333333"];
+  "concept_renal_pelvis" -> "node_bio_vis_02" [label="explains", style="solid", color="#333333"];
+  "node_bio_seg_07" -> "node_bio_vis_03" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_bertini" -> "node_bio_vis_03" [label="explains", style="solid", color="#333333"];
+  "node_bio_seg_08" -> "node_bio_vis_03" [label="corresponds_to", style="solid", color="#333333"];
+}

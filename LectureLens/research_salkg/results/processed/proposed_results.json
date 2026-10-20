@@ -1,0 +1,291 @@
+{
+  "lectures": [
+    {
+      "lecture_id": "physics_rlc_01",
+      "inferred_subject": "physics_electronics",
+      "alignment_metrics": {
+        "method": "proposed_sequence_optimized_selective",
+        "tp": 5,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "selective_precision": 1.0,
+        "forced_choice_accuracy": 1.0,
+        "coverage": 1.0,
+        "false_match_rate": 0.0,
+        "total_gold_pairs": 5,
+        "accepted_matches": 5,
+        "runtime_seconds": 0.0148
+      },
+      "graph_metrics": {
+        "node_precision": 0.1,
+        "node_recall": 0.5,
+        "node_f1": 0.1667,
+        "edge_precision": 0.3333,
+        "edge_recall": 1.0,
+        "edge_f1": 0.5,
+        "strict_edge_f1": 0.0,
+        "relaxed_edge_f1": 0.5,
+        "evidence_attribution_accuracy": 1.0,
+        "unsupported_relation_rate": 0.0,
+        "duplicate_entities_merged": 0,
+        "dag_cycles_detected": 0,
+        "schema_violations": 0,
+        "remaining_violations": 0,
+        "total_nodes": 19,
+        "total_edges": 15,
+        "accepted_edges": 15
+      },
+      "confidence_stats": {
+        "total_candidates": 5,
+        "accepted": 5,
+        "review": 0,
+        "rejected": 0,
+        "coverage": 1.0,
+        "rejection_rate": 0.0,
+        "review_rate": 0.0
+      },
+      "validation_report": {
+        "initial_node_count": 19,
+        "initial_edge_count": 15,
+        "schema_violations": 0,
+        "broken_timestamps": 0,
+        "missing_provenance": 0,
+        "cycles_detected": 0,
+        "duplicates_merged": 0,
+        "accepted_edges": 15,
+        "unresolved_edges": 0,
+        "rejected_edges": 0,
+        "issues": [],
+        "final_node_count": 19,
+        "final_edge_count": 15,
+        "remaining_violations": 0
+      }
+    },
+    {
+      "lecture_id": "cs_systems_01",
+      "inferred_subject": "general_cs",
+      "alignment_metrics": {
+        "method": "proposed_sequence_optimized_selective",
+        "tp": 5,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "selective_precision": 1.0,
+        "forced_choice_accuracy": 1.0,
+        "coverage": 1.0,
+        "false_match_rate": 0.0,
+        "total_gold_pairs": 5,
+        "accepted_matches": 5,
+        "runtime_seconds": 0.0077
+      },
+      "graph_metrics": {
+        "node_precision": 0.2222,
+        "node_recall": 1.0,
+        "node_f1": 0.3636,
+        "edge_precision": 0.5,
+        "edge_recall": 1.0,
+        "edge_f1": 0.6667,
+        "strict_edge_f1": 0.6667,
+        "relaxed_edge_f1": 0.6667,
+        "evidence_attribution_accuracy": 1.0,
+        "unsupported_relation_rate": 0.0,
+        "duplicate_entities_merged": 0,
+        "dag_cycles_detected": 0,
+        "schema_violations": 0,
+        "remaining_violations": 0,
+        "total_nodes": 18,
+        "total_edges": 16,
+        "accepted_edges": 16
+      },
+      "confidence_stats": {
+        "total_candidates": 5,
+        "accepted": 5,
+        "review": 0,
+        "rejected": 0,
+        "coverage": 1.0,
+        "rejection_rate": 0.0,
+        "review_rate": 0.0
+      },
+      "validation_report": {
+        "initial_node_count": 18,
+        "initial_edge_count": 16,
+        "schema_violations": 0,
+        "broken_timestamps": 0,
+        "missing_provenance": 0,
+        "cycles_detected": 0,
+        "duplicates_merged": 0,
+        "accepted_edges": 16,
+        "unresolved_edges": 0,
+        "rejected_edges": 0,
+        "issues": [],
+        "final_node_count": 18,
+        "final_edge_count": 16,
+        "remaining_violations": 0
+      }
+    },
+    {
+      "lecture_id": "math_noisy_edge_cases",
+      "inferred_subject": "mathematics",
+      "alignment_metrics": {
+        "method": "proposed_sequence_optimized_selective",
+        "tp": 5,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "selective_precision": 1.0,
+        "forced_choice_accuracy": 1.0,
+        "coverage": 1.0,
+        "false_match_rate": 0.0,
+        "total_gold_pairs": 5,
+        "accepted_matches": 5,
+        "runtime_seconds": 0.0115
+      },
+      "graph_metrics": {
+        "node_precision": 0.0,
+        "node_recall": 0.0,
+        "node_f1": 0.0,
+        "edge_precision": 0.0,
+        "edge_recall": 0.0,
+        "edge_f1": 0.0,
+        "strict_edge_f1": 0.0,
+        "relaxed_edge_f1": 0.0,
+        "evidence_attribution_accuracy": 1.0,
+        "unsupported_relation_rate": 0.0,
+        "duplicate_entities_merged": 0,
+        "dag_cycles_detected": 0,
+        "schema_violations": 0,
+        "remaining_violations": 0,
+        "total_nodes": 14,
+        "total_edges": 11,
+        "accepted_edges": 11
+      },
+      "confidence_stats": {
+        "total_candidates": 5,
+        "accepted": 5,
+        "review": 0,
+        "rejected": 0,
+        "coverage": 1.0,
+        "rejection_rate": 0.0,
+        "review_rate": 0.0
+      },
+      "validation_report": {
+        "initial_node_count": 14,
+        "initial_edge_count": 11,
+        "schema_violations": 0,
+        "broken_timestamps": 0,
+        "missing_provenance": 0,
+        "cycles_detected": 0,
+        "duplicates_merged": 0,
+        "accepted_edges": 11,
+        "unresolved_edges": 0,
+        "rejected_edges": 0,
+        "issues": [],
+        "final_node_count": 14,
+        "final_edge_count": 11,
+        "remaining_violations": 0
+      }
+    },
+    {
+      "lecture_id": "humanities_philosophy_01",
+      "inferred_subject": "unknown",
+      "alignment_metrics": {
+        "method": "proposed_sequence_optimized_selective",
+        "tp": 3,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "selective_precision": 1.0,
+        "forced_choice_accuracy": 1.0,
+        "coverage": 1.0,
+        "false_match_rate": 0.0,
+        "total_gold_pairs": 3,
+        "accepted_matches": 3,
+        "runtime_seconds": 0.0027
+      },
+      "graph_metrics": {
+        "node_precision": 0.0,
+        "node_recall": 0.0,
+        "node_f1": 0.0,
+        "edge_precision": 0.0,
+        "edge_recall": 0.0,
+        "edge_f1": 0.0,
+        "strict_edge_f1": 0.0,
+        "relaxed_edge_f1": 0.0,
+        "evidence_attribution_accuracy": 1.0,
+        "unsupported_relation_rate": 0.0,
+        "duplicate_entities_merged": 0,
+        "dag_cycles_detected": 0,
+        "schema_violations": 0,
+        "remaining_violations": 0,
+        "total_nodes": 9,
+        "total_edges": 6,
+        "accepted_edges": 6
+      },
+      "confidence_stats": {
+        "total_candidates": 3,
+        "accepted": 3,
+        "review": 0,
+        "rejected": 0,
+        "coverage": 1.0,
+        "rejection_rate": 0.0,
+        "review_rate": 0.0
+      },
+      "validation_report": {
+        "initial_node_count": 9,
+        "initial_edge_count": 6,
+        "schema_violations": 0,
+        "broken_timestamps": 0,
+        "missing_provenance": 0,
+        "cycles_detected": 0,
+        "duplicates_merged": 0,
+        "accepted_edges": 6,
+        "unresolved_edges": 0,
+        "rejected_edges": 0,
+        "issues": [],
+        "final_node_count": 9,
+        "final_edge_count": 6,
+        "remaining_violations": 0
+      }
+    }
+  ],
+  "subject_classification_metrics": {
+    "accuracy": 1.0,
+    "macro_f1": 1.0,
+    "confusion_matrix": {
+      "general_cs": {
+        "general_cs": 1,
+        "mathematics": 0,
+        "physics_electronics": 0,
+        "unknown": 0
+      },
+      "mathematics": {
+        "general_cs": 0,
+        "mathematics": 1,
+        "physics_electronics": 0,
+        "unknown": 0
+      },
+      "physics_electronics": {
+        "general_cs": 0,
+        "mathematics": 0,
+        "physics_electronics": 1,
+        "unknown": 0
+      },
+      "unknown": {
+        "general_cs": 0,
+        "mathematics": 0,
+        "physics_electronics": 0,
+        "unknown": 1
+      }
+    },
+    "total_samples": 4
+  }
+}

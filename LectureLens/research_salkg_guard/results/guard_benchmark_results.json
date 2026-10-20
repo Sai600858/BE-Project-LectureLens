@@ -1,0 +1,39 @@
+{
+  "timestamp": "2026-10-15T12:39:20Z",
+  "dataset": "C:\\Users\\Sumit\\OneDrive\\Desktop\\BE-project\\LectureLens\\research_salkg\\experiments\\guard_benchmark.json",
+  "configurations": {
+    "A_Baseline_Gemini_RAG": {
+      "total_queries": 10,
+      "total_claims": 16,
+      "precision_grounded_ratio": 6.25,
+      "unsupported_claim_rate": 93.75,
+      "cross_modal_grounding_score": 0.0,
+      "domain_violation_rate": 0.0,
+      "abstention_accuracy": 0.0,
+      "citation_validity": 12.5,
+      "avg_latency_ms": 450.0
+    },
+    "B_SALKG_Multimodal_RAG": {
+      "total_queries": 10,
+      "total_claims": 10,
+      "precision_grounded_ratio": 20.0,
+      "unsupported_claim_rate": 80.0,
+      "cross_modal_grounding_score": 0.0,
+      "domain_violation_rate": 0.0,
+      "abstention_accuracy": 0.0,
+      "citation_validity": 25.0,
+      "avg_latency_ms": 580.0
+    },
+    "C_Full_SALKG_Guard_Pipeline": {
+      "total_queries": 10,
+      "total_claims": 10,
+      "precision_grounded_ratio": 10.0,
+      "unsupported_claim_rate": 90.0,
+      "cross_modal_grounding_score": 0.0,
+      "domain_violation_rate": 0.0,
+      "abstention_accuracy": 100.0,
+      "citation_validity": 62.5,
+      "avg_latency_ms": 640.2
+    }
+  }
+}

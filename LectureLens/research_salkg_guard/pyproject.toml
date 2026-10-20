@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "salkg_guard"
+version = "0.1.0"
+description = "SALKG-Guard: Hallucination Prevention & Multimodal Knowledge Guard for Educational AI"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+    { name = "LectureLens Research Team" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Intended Audience :: Science/Research",
+]
+
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0",
+]
+
+[project.scripts]
+salkg-guard = "salkg_guard.pipeline:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,50 @@
+{
+  "no_subject_conditioning": {
+    "description": "Remove subject-adaptive feature weights; use fixed uniform weights",
+    "alignment_f1": 0.9663,
+    "edge_f1": 0.1111,
+    "avg_violations": 1.0
+  },
+  "no_temporal_feature": {
+    "description": "Exclude temporal decay score from alignment objective",
+    "alignment_f1": 0.0476,
+    "edge_f1": 0.0,
+    "avg_violations": 0.67
+  },
+  "no_semantic_feature": {
+    "description": "Exclude text semantic similarity score from alignment objective",
+    "alignment_f1": 0.9663,
+    "edge_f1": 0.2222,
+    "avg_violations": 1.0
+  },
+  "no_content_type_compatibility": {
+    "description": "Exclude visual-to-speech content type compatibility matrix",
+    "alignment_f1": 0.4378,
+    "edge_f1": 0.0,
+    "avg_violations": 0.67
+  },
+  "no_symbol_identifier_overlap": {
+    "description": "Exclude mathematical symbol and code identifier overlap features",
+    "alignment_f1": 0.9074,
+    "edge_f1": 0.1111,
+    "avg_violations": 1.0
+  },
+  "no_sequence_optimization": {
+    "description": "Use greedy local matching without dynamic programming transition constraints",
+    "alignment_f1": 0.5946,
+    "edge_f1": 0.0,
+    "avg_violations": 0.83
+  },
+  "no_confidence_rejection": {
+    "description": "Accept all top-1 candidate alignments regardless of score or margin",
+    "alignment_f1": 0.9815,
+    "edge_f1": 0.1111,
+    "avg_violations": 1.0
+  },
+  "no_graph_validation": {
+    "description": "Output knowledge graph without cycle checking, deduplication, or unsupported relation filtering",
+    "alignment_f1": 0.5946,
+    "edge_f1": 0.0,
+    "avg_violations": 0.0
+  }
+}

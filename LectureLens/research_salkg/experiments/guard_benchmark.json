@@ -1,0 +1,104 @@
+[
+  {
+    "id": "bench_math_01",
+    "domain": "mathematics",
+    "query": "What formula was derived for the circle area, and how does area change if the radius doubles?",
+    "ground_truth_concepts": ["A = \\pi r^2", "radius r", "scales quadratically by factor of 4"],
+    "is_answerable": true,
+    "has_domain_check": true,
+    "lecture_id": "lec_26698520",
+    "expected_decision": "ACCEPT"
+  },
+  {
+    "id": "bench_math_02_error",
+    "domain": "mathematics",
+    "query": "Is it true that circle area is A = 2 * pi * r^2 and scales linearly with radius?",
+    "ground_truth_concepts": ["A = \\pi r^2", "false claim"],
+    "is_answerable": true,
+    "has_domain_check": true,
+    "is_adversarial_error": true,
+    "adversarial_claim": "The circle area formula is A = 2 * \\pi * r^2, which scales linearly with radius [00:15].",
+    "expected_decision": "REGENERATE"
+  },
+  {
+    "id": "bench_algo_01",
+    "domain": "algorithms",
+    "query": "Explain the interval halving mechanism and time complexity of binary search.",
+    "ground_truth_concepts": ["binary search", "O(\\log n)", "mid = (low + high) // 2"],
+    "is_answerable": true,
+    "has_domain_check": true,
+    "lecture_id": "lec_26698520",
+    "expected_decision": "ACCEPT"
+  },
+  {
+    "id": "bench_algo_02_error",
+    "domain": "algorithms",
+    "query": "What is the worst case time complexity of binary search on a sorted array?",
+    "ground_truth_concepts": ["O(\\log n)"],
+    "is_answerable": true,
+    "has_domain_check": true,
+    "is_adversarial_error": true,
+    "adversarial_claim": "Binary search on a sorted array of size n requires O(n^2) time complexity because every element must be inspected [00:20].",
+    "expected_decision": "REGENERATE"
+  },
+  {
+    "id": "bench_elec_01",
+    "domain": "electronics",
+    "query": "State the voltage divider formula and Ohm's law relation.",
+    "ground_truth_concepts": ["V = I * R", "V_out = V_in * (R2 / (R1 + R2))"],
+    "is_answerable": true,
+    "has_domain_check": true,
+    "expected_decision": "ACCEPT"
+  },
+  {
+    "id": "bench_elec_02_error",
+    "domain": "electronics",
+    "query": "Does a voltage divider produce V_out = V_in * (R1 + R2) / R2?",
+    "ground_truth_concepts": ["V_out = V_in * (R2 / (R1 + R2))"],
+    "is_answerable": true,
+    "has_domain_check": true,
+    "is_adversarial_error": true,
+    "adversarial_claim": "The voltage divider output is given by V_out = V_in * (R1 + R2) / R2 which steps up the input voltage [00:25].",
+    "expected_decision": "REGENERATE"
+  },
+  {
+    "id": "bench_db_01",
+    "domain": "database",
+    "query": "What are the four ACID properties for database transaction processing?",
+    "ground_truth_concepts": ["Atomicity", "Consistency", "Isolation", "Durability"],
+    "is_answerable": true,
+    "has_domain_check": true,
+    "expected_decision": "ACCEPT"
+  },
+  {
+    "id": "bench_citation_invalid",
+    "domain": "mathematics",
+    "query": "When was the circle equation written on the board?",
+    "ground_truth_concepts": ["A = \\pi r^2"],
+    "is_answerable": true,
+    "has_domain_check": true,
+    "is_adversarial_error": true,
+    "adversarial_claim": "The instructor wrote the circle area equation on the board at timestamp [99:99] and explained it.",
+    "expected_decision": "REGENERATE"
+  },
+  {
+    "id": "bench_unanswerable_01",
+    "domain": "general",
+    "query": "What were the strategic causes and tactics used in the Battle of Cannae during the Second Punic War?",
+    "ground_truth_concepts": [],
+    "is_answerable": false,
+    "has_domain_check": false,
+    "lecture_id": "lec_26698520",
+    "expected_decision": "ABSTAIN"
+  },
+  {
+    "id": "bench_unanswerable_02",
+    "domain": "quantum",
+    "query": "Explain how Shor's algorithm implements the quantum Fourier transform to factor large integers.",
+    "ground_truth_concepts": [],
+    "is_answerable": false,
+    "has_domain_check": false,
+    "lecture_id": "lec_26698520",
+    "expected_decision": "ABSTAIN"
+  }
+]

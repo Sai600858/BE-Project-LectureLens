@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SALKG Knowledge Graph - math_noisy_edge_cases</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background: #0f172a; color: #f8fafc; }
+    #header { padding: 16px 24px; background: #1e293b; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+    #container { display: flex; height: calc(100vh - 72px); }
+    #graph-pane { flex: 1; overflow: auto; position: relative; background: #0f172a; }
+    #info-pane { width: 380px; background: #1e293b; border-left: 1px solid #334155; padding: 20px; overflow-y: auto; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+    .status-accepted { background: #065f46; color: #34d399; }
+    .status-unresolved { background: #854d0e; color: #facc15; }
+    .status-rejected { background: #991b1b; color: #f87171; }
+    .card { background: #0f172a; border-radius: 8px; padding: 14px; margin-bottom: 16px; border: 1px solid #334155; }
+    svg { width: 100%; height: 100%; min-width: 800px; min-height: 600px; }
+    circle, rect { cursor: pointer; transition: all 0.2s; }
+    circle:hover, rect:hover { stroke: #38bdf8; stroke-width: 3px; }
+    line { stroke: #475569; stroke-width: 1.5; }
+    text { fill: #e2e8f0; font-size: 11px; user-select: none; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <div>
+      <h2 style="margin:0 0 4px 0;">SALKG Knowledge Graph: math_noisy_edge_cases</h2>
+      <div style="font-size:13px; color:#94a3b8;">Subject: <strong>Mathematics</strong> | Nodes: 15 | Edges: 11</div>
+    </div>
+  </div>
+  <div id="container">
+    <div id="graph-pane">
+      <svg id="svg-graph"></svg>
+    </div>
+    <div id="info-pane">
+      <h3 style="margin-top:0;">Provenance Inspector</h3>
+      <div id="details">Click on any node or edge to inspect its multimodal evidence provenance, timestamps, and validation status.</div>
+    </div>
+  </div>
+
+  <script>
+    const nodes = [{"id": "node_edge_vis_01", "label": "Polynomial Derivative: f(x) = x^2, f'(x) = 2x", "type": "Formula", "color": "#9C27B0", "provenance_seg": [], "provenance_vis": ["edge_vis_01"], "timestamps": [4.0]}, {"id": "node_edge_vis_02", "label": "Trigonometric Derivative: \\frac{d}{dx}[\\sin(x)] = \\cos(x)", "type": "Formula", "color": "#9C27B0", "provenance_seg": [], "provenance_vis": ["edge_vis_02"], "timestamps": [39.0]}, {"id": "node_edge_vis_01_repeat", "label": "Polynomial Derivative (Repeated): f(x) = x^n, f'(x) = n x^{n", "type": "Formula", "color": "#9C27B0", "provenance_seg": [], "provenance_vis": ["edge_vis_01_repeat"], "timestamps": [83.0]}, {"id": "node_edge_vis_03_noisy_ocr", "label": "Trig Derv: d/dx[cos x] = -sin x -- noisy 0CR artifacts #$%!?", "type": "Formula", "color": "#9C27B0", "provenance_seg": [], "provenance_vis": ["edge_vis_03_noisy_ocr"], "timestamps": [145.0]}, {"id": "node_edge_vis_04_contradiction", "label": "Plot of Decreasing Function: Slope f'(x) < 0 (Downward Monot", "type": "ArchitectureComponent", "color": "#999999", "provenance_seg": [], "provenance_vis": ["edge_vis_04_contradiction"], "timestamps": [250.0]}, {"id": "node_edge_seg_01", "label": "Today we revisit derivatives. Look at this equatio...", "type": "LectureSegment", "color": "#607D8B", "provenance_seg": ["edge_seg_01"], "provenance_vis": [], "timestamps": [5.0, 35.0]}, {"id": "concept_look", "label": "Look", "type": "Concept", "color": "#4CAF50", "provenance_seg": ["edge_seg_01"], "provenance_vis": ["edge_vis_01"], "timestamps": [5.0]}, {"id": "node_edge_seg_02", "label": "Now we move forward to trigonometric functions. He...", "type": "LectureSegment", "color": "#607D8B", "provenance_seg": ["edge_seg_02"], "provenance_vis": [], "timestamps": [40.0, 80.0]}, {"id": "concept_here", "label": "Here", "type": "Concept", "color": "#4CAF50", "provenance_seg": ["edge_seg_02"], "provenance_vis": ["edge_vis_02"], "timestamps": [40.0]}, {"id": "node_edge_seg_03", "label": "Let us go back to our earlier slide on polynomial ...", "type": "LectureSegment", "color": "#607D8B", "provenance_seg": ["edge_seg_03"], "provenance_vis": [], "timestamps": [85.0, 130.0]}, {"id": "concept_states_nx_to_the_n_minus_1", "label": "States Nx To The N Minus 1", "type": "Concept", "color": "#4CAF50", "provenance_seg": ["edge_seg_03"], "provenance_vis": ["edge_vis_01_repeat"], "timestamps": [85.0]}, {"id": "node_edge_seg_04", "label": "Notice this noisy transcription: the drivative of ...", "type": "LectureSegment", "color": "#607D8B", "provenance_seg": ["edge_seg_04"], "provenance_vis": [], "timestamps": [170.0, 220.0]}, {"id": "concept_notice", "label": "Notice", "type": "Concept", "color": "#4CAF50", "provenance_seg": ["edge_seg_04"], "provenance_vis": ["edge_vis_03_noisy_ocr"], "timestamps": [170.0]}, {"id": "node_edge_seg_05", "label": "Now look closely at the curve on screen. The spoke...", "type": "LectureSegment", "color": "#607D8B", "provenance_seg": ["edge_seg_05"], "provenance_vis": [], "timestamps": [260.0, 320.0]}, {"id": "concept_this", "label": "This", "type": "Concept", "color": "#4CAF50", "provenance_seg": ["edge_seg_05"], "provenance_vis": ["edge_vis_04_contradiction"], "timestamps": [260.0]}];
+    const edges = [{"source": "node_edge_seg_01", "target": "node_edge_vis_01", "relation": "corresponds_to", "confidence": 0.5885, "status": "accepted", "provenance_seg": ["edge_seg_01"], "provenance_vis": ["edge_vis_01"]}, {"source": "concept_look", "target": "node_edge_vis_01", "relation": "explains", "confidence": 0.5885, "status": "accepted", "provenance_seg": ["edge_seg_01"], "provenance_vis": ["edge_vis_01"]}, {"source": "node_edge_seg_02", "target": "node_edge_vis_02", "relation": "corresponds_to", "confidence": 0.3405, "status": "accepted", "provenance_seg": ["edge_seg_02"], "provenance_vis": ["edge_vis_02"]}, {"source": "concept_here", "target": "node_edge_vis_02", "relation": "explains", "confidence": 0.3405, "status": "accepted", "provenance_seg": ["edge_seg_02"], "provenance_vis": ["edge_vis_02"]}, {"source": "node_edge_seg_03", "target": "node_edge_vis_01_repeat", "relation": "corresponds_to", "confidence": 0.3527, "status": "unresolved", "provenance_seg": ["edge_seg_03"], "provenance_vis": ["edge_vis_01_repeat"]}, {"source": "concept_states_nx_to_the_n_minus_1", "target": "node_edge_vis_01_repeat", "relation": "explains", "confidence": 0.3527, "status": "unresolved", "provenance_seg": ["edge_seg_03"], "provenance_vis": ["edge_vis_01_repeat"]}, {"source": "node_edge_seg_04", "target": "node_edge_vis_03_noisy_ocr", "relation": "corresponds_to", "confidence": 0.3429, "status": "unresolved", "provenance_seg": ["edge_seg_04"], "provenance_vis": ["edge_vis_03_noisy_ocr"]}, {"source": "concept_notice", "target": "node_edge_vis_03_noisy_ocr", "relation": "explains", "confidence": 0.3429, "status": "unresolved", "provenance_seg": ["edge_seg_04"], "provenance_vis": ["edge_vis_03_noisy_ocr"]}, {"source": "node_edge_seg_05", "target": "node_edge_vis_04_contradiction", "relation": "corresponds_to", "confidence": 0.6016, "status": "accepted", "provenance_seg": ["edge_seg_05"], "provenance_vis": ["edge_vis_04_contradiction"]}, {"source": "concept_this", "target": "node_edge_vis_04_contradiction", "relation": "explains", "confidence": 0.6016, "status": "accepted", "provenance_seg": ["edge_seg_05"], "provenance_vis": ["edge_vis_04_contradiction"]}, {"source": "node_edge_vis_04_contradiction", "target": "concept_this", "relation": "contradicts", "confidence": 0.6016, "status": "accepted", "provenance_seg": ["edge_seg_05"], "provenance_vis": ["edge_vis_04_contradiction"]}];
+    const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]));
+
+    const svg = document.getElementById('svg-graph');
+    const width = 1200;
+    const height = 900;
+    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+    // Simple deterministic radial/force-inspired layout
+    const N = nodes.length;
+    const radius = Math.min(width, height) * 0.40;
+    const cx = width / 2;
+    const cy = height / 2;
+
+    nodes.forEach((n, i) => {
+      const angle = (2 * Math.PI * i) / N;
+      n.x = cx + radius * Math.cos(angle) + (i % 2 === 0 ? 30 : -30);
+      n.y = cy + radius * Math.sin(angle) + (i % 3 === 0 ? 25 : -25);
+    });
+
+    // Render Edges
+    edges.forEach(e => {
+      const s = nodeMap[e.source];
+      const t = nodeMap[e.target];
+      if (!s || !t) return;
+
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', s.x);
+      line.setAttribute('y1', s.y);
+      line.setAttribute('x2', t.x);
+      line.setAttribute('y2', t.y);
+      line.setAttribute('stroke', e.status === 'accepted' ? '#38bdf8' : '#f87171');
+      if (e.status !== 'accepted') line.setAttribute('stroke-dasharray', '4,4');
+      line.style.cursor = 'pointer';
+
+      line.onclick = () => {
+        document.getElementById('details').innerHTML = `
+          <div class="card">
+            <h4>Relationship: ${e.relation}</h4>
+            <p><strong>From:</strong> ${s.label}</p>
+            <p><strong>To:</strong> ${t.label}</p>
+            <p><strong>Status:</strong> <span class="badge status-${e.status}">${e.status}</span></p>
+            <p><strong>Confidence:</strong> ${e.confidence.toFixed(3)}</p>
+            <p><strong>Provenance Segments:</strong> ${e.provenance_seg.join(', ') || 'None'}</p>
+            <p><strong>Provenance Visuals:</strong> ${e.provenance_vis.join(', ') || 'None'}</p>
+          </div>
+        `;
+      };
+      svg.appendChild(line);
+    });
+
+    // Render Nodes
+    nodes.forEach(n => {
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+
+      const label = n.label.length > 22 ? n.label.substring(0, 20) + '...' : n.label;
+      text.textContent = label;
+      text.setAttribute('x', n.x);
+      text.setAttribute('y', n.y + 4);
+      text.setAttribute('text-anchor', 'middle');
+
+      const boxW = Math.max(100, label.length * 7 + 16);
+      const boxH = 26;
+      rect.setAttribute('x', n.x - boxW/2);
+      rect.setAttribute('y', n.y - boxH/2);
+      rect.setAttribute('width', boxW);
+      rect.setAttribute('height', boxH);
+      rect.setAttribute('rx', 6);
+      rect.setAttribute('fill', n.color);
+
+      g.appendChild(rect);
+      g.appendChild(text);
+
+      g.onclick = () => {
+        document.getElementById('details').innerHTML = `
+          <div class="card">
+            <h4>${n.label}</h4>
+            <p><strong>Type:</strong> ${n.type}</p>
+            <p><strong>Node ID:</strong> <code>${n.id}</code></p>
+            <p><strong>Timestamps:</strong> ${n.timestamps.map(t => t.toFixed(1) + 's').join(', ') || 'N/A'}</p>
+            <p><strong>Speech Evidence:</strong> ${n.provenance_seg.join(', ') || 'None'}</p>
+            <p><strong>Visual Evidence:</strong> ${n.provenance_vis.join(', ') || 'None'}</p>
+          </div>
+        `;
+      };
+      svg.appendChild(g);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+{
+  "name": "sfumedia-server",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/visualization.test.js",
+    "dev": "nodemon src/server.js",
+    "llm-server": "node src/mock_llm_server.js",
+    "stt-openai": "node src/real_llm_server_openai.js",
+    "stt-gemini": "node src/real_llm_server_gemini.js",
+    "stt-whisper": "python src/real_llm_server_whisper.py",
+    "ai-service": "python -m uvicorn ai_service.main:app --port 8000"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.3",
+    "mediasoup": "^3.14.7",
+    "multer": "^2.4.0",
+    "openai": "^7.4.0",
+    "pdfkit": "^0.20.2",
+    "sharp": "^0.35.5",
+    "socket.io": "^4.7.2",
+    "socket.io-client": "^4.8.4",
+    "sqlite3": "^6.0.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

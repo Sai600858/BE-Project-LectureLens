@@ -1,0 +1,22 @@
+digraph "humanities_philosophy_01" {
+  rankdir="LR";
+  node [shape=box, style="filled,rounded", fontname="Helvetica"];
+  edge [fontname="Helvetica", fontsize=10];
+
+  "node_phil_vis_01" [label="Moral Philosophy: Utilitarianism vs\n(VisualEvent)", fillcolor="#3F51B5"];
+  "node_phil_vis_02" [label="Bentham (Greatest Happiness Princip\n(VisualEvent)", fillcolor="#3F51B5"];
+  "node_phil_vis_03" [label="The Trolley Problem Thought Experim\n(VisualEvent)", fillcolor="#3F51B5"];
+  "node_phil_seg_01" [label="Today we reflect upon moral philoso\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_kantian" [label="Kantian\n(Concept)", fillcolor="#4CAF50"];
+  "node_phil_seg_02" [label="Jeremy Bentham argues that actions \n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_jeremy_bentham" [label="Jeremy Bentham\n(Concept)", fillcolor="#4CAF50"];
+  "concept_immanuel_kant" [label="Immanuel Kant\n(Concept)", fillcolor="#4CAF50"];
+  "node_phil_seg_03" [label="Consider the famous trolley problem\n(LectureSegment)", fillcolor="#607D8B"];
+
+  "node_phil_seg_01" -> "node_phil_vis_01" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_kantian" -> "node_phil_vis_01" [label="explains", style="solid", color="#333333"];
+  "node_phil_seg_02" -> "node_phil_vis_02" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_jeremy_bentham" -> "node_phil_vis_02" [label="explains", style="solid", color="#333333"];
+  "concept_immanuel_kant" -> "node_phil_vis_02" [label="explains", style="solid", color="#333333"];
+  "node_phil_seg_03" -> "node_phil_vis_03" [label="corresponds_to", style="solid", color="#333333"];
+}

@@ -1,0 +1,309 @@
+{
+  "lecture_id": "humanities_philosophy_01",
+  "subject": "unknown",
+  "nodes": [
+    {
+      "node_id": "node_phil_vis_01",
+      "label": "Moral Philosophy: Utilitarianism vs Deontology",
+      "node_type": "VisualEvent",
+      "subject": "unknown",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "phil_vis_01"
+      ],
+      "timestamps": [
+        4.0
+      ],
+      "attributes": {
+        "visual_type": "slide_text",
+        "extracted_text": "Moral Philosophy: Utilitarianism vs Deontology",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Title slide on moral philosophy"
+      }
+    },
+    {
+      "node_id": "node_phil_vis_02",
+      "label": "Bentham (Greatest Happiness Principle) vs Kant (Categorical ",
+      "node_type": "VisualEvent",
+      "subject": "unknown",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "phil_vis_02"
+      ],
+      "timestamps": [
+        39.0
+      ],
+      "attributes": {
+        "visual_type": "slide_text",
+        "extracted_text": "Bentham (Greatest Happiness Principle) vs Kant (Categorical Imperative)",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Comparison table of ethical theories"
+      }
+    },
+    {
+      "node_id": "node_phil_vis_03",
+      "label": "The Trolley Problem Thought Experiment: Lever Dilemma",
+      "node_type": "VisualEvent",
+      "subject": "unknown",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "phil_vis_03"
+      ],
+      "timestamps": [
+        89.0
+      ],
+      "attributes": {
+        "visual_type": "diagram",
+        "extracted_text": "The Trolley Problem Thought Experiment: Lever Dilemma",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Diagram of trolley problem"
+      }
+    },
+    {
+      "node_id": "node_phil_seg_01",
+      "label": "Today we reflect upon moral philosophy, specifical...",
+      "node_type": "LectureSegment",
+      "subject": "unknown",
+      "provenance_segment_ids": [
+        "phil_seg_01"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        5.0,
+        35.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_phil",
+        "text": "Today we reflect upon moral philosophy, specifically contrasting utilitarian consequentialism with Kantian deontological duties."
+      }
+    },
+    {
+      "node_id": "concept_kantian",
+      "label": "Kantian",
+      "node_type": "Concept",
+      "subject": "unknown",
+      "provenance_segment_ids": [
+        "phil_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "phil_vis_01"
+      ],
+      "timestamps": [
+        5.0
+      ],
+      "attributes": {
+        "canonical_name": "kantian"
+      }
+    },
+    {
+      "node_id": "node_phil_seg_02",
+      "label": "Jeremy Bentham argues that actions are right in pr...",
+      "node_type": "LectureSegment",
+      "subject": "unknown",
+      "provenance_segment_ids": [
+        "phil_seg_02"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        40.0,
+        85.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_phil",
+        "text": "Jeremy Bentham argues that actions are right in proportion as they tend to promote happiness, whereas Immanuel Kant insists upon the categorical imperative."
+      }
+    },
+    {
+      "node_id": "concept_jeremy_bentham",
+      "label": "Jeremy Bentham",
+      "node_type": "Concept",
+      "subject": "unknown",
+      "provenance_segment_ids": [
+        "phil_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "phil_vis_02"
+      ],
+      "timestamps": [
+        40.0
+      ],
+      "attributes": {
+        "canonical_name": "jeremy bentham"
+      }
+    },
+    {
+      "node_id": "concept_immanuel_kant",
+      "label": "Immanuel Kant",
+      "node_type": "Concept",
+      "subject": "unknown",
+      "provenance_segment_ids": [
+        "phil_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "phil_vis_02"
+      ],
+      "timestamps": [
+        40.0
+      ],
+      "attributes": {
+        "canonical_name": "immanuel kant"
+      }
+    },
+    {
+      "node_id": "node_phil_seg_03",
+      "label": "Consider the famous trolley problem thought experi...",
+      "node_type": "LectureSegment",
+      "subject": "unknown",
+      "provenance_segment_ids": [
+        "phil_seg_03"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        90.0,
+        150.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_phil",
+        "text": "Consider the famous trolley problem thought experiment as an illustration of competing moral intuitions."
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "node_phil_seg_01",
+      "target_id": "node_phil_vis_01",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "phil_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "phil_vis_01"
+      ],
+      "timestamps": [
+        5.0,
+        4.0
+      ],
+      "alignment_score": 0.5347,
+      "calibrated_confidence": 0.6212,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_kantian",
+      "target_id": "node_phil_vis_01",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "phil_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "phil_vis_01"
+      ],
+      "timestamps": [
+        5.0
+      ],
+      "alignment_score": 0.5347,
+      "calibrated_confidence": 0.6212,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_phil_seg_02",
+      "target_id": "node_phil_vis_02",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "phil_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "phil_vis_02"
+      ],
+      "timestamps": [
+        40.0,
+        39.0
+      ],
+      "alignment_score": 0.5127,
+      "calibrated_confidence": 0.5114,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_jeremy_bentham",
+      "target_id": "node_phil_vis_02",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "phil_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "phil_vis_02"
+      ],
+      "timestamps": [
+        40.0
+      ],
+      "alignment_score": 0.5127,
+      "calibrated_confidence": 0.5114,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_immanuel_kant",
+      "target_id": "node_phil_vis_02",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "phil_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "phil_vis_02"
+      ],
+      "timestamps": [
+        40.0
+      ],
+      "alignment_score": 0.5127,
+      "calibrated_confidence": 0.5114,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_phil_seg_03",
+      "target_id": "node_phil_vis_03",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "phil_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "phil_vis_03"
+      ],
+      "timestamps": [
+        90.0,
+        89.0
+      ],
+      "alignment_score": 0.6113,
+      "calibrated_confidence": 0.7066,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    }
+  ],
+  "validation_summary": {
+    "initial_node_count": 9,
+    "initial_edge_count": 6,
+    "schema_violations": 0,
+    "broken_timestamps": 0,
+    "missing_provenance": 0,
+    "cycles_detected": 0,
+    "duplicates_merged": 0,
+    "accepted_edges": 6,
+    "unresolved_edges": 0,
+    "rejected_edges": 0,
+    "issues": [],
+    "final_node_count": 9,
+    "final_edge_count": 6,
+    "remaining_violations": 0
+  }
+}

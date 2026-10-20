@@ -1,0 +1,38 @@
+digraph "cs_programming_01" {
+  rankdir="LR";
+  node [shape=box, style="filled,rounded", fontname="Helvetica"];
+  edge [fontname="Helvetica", fontsize=10];
+
+  "node_prog_vis_01" [label="Algorithm Analysis: Binary Search O\n(VisualEvent)", fillcolor="#3F51B5"];
+  "node_prog_vis_02" [label="Prerequisites: Sorted Arrays, Rando\n(VisualEvent)", fillcolor="#3F51B5"];
+  "node_prog_vis_03" [label="def binary_search(arr, target):    \n(Concept)", fillcolor="#4CAF50"];
+  "node_prog_vis_04" [label="Complexity Analysis: Best Case O(1)\n(VisualEvent)", fillcolor="#3F51B5"];
+  "node_prog_seg_01" [label="Today we will analyze Binary Search\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_for_finding_target_keys_in_loga" [label="For Finding Target Keys In Loga\n(Concept)", fillcolor="#4CAF50"];
+  "node_prog_seg_02" [label="Before learning Binary Search, one \n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_before" [label="Before\n(Concept)", fillcolor="#4CAF50"];
+  "concept_binary_search" [label="Binary Search\n(Concept)", fillcolor="#4CAF50"];
+  "concept_sorted_arrays" [label="Sorted Arrays\n(Concept)", fillcolor="#4CAF50"];
+  "concept_array_indexing_fundamentals" [label="Array Indexing Fundamentals\n(Prerequisite)", fillcolor="#795548"];
+  "node_prog_seg_03" [label="Look at the code implementation on \n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_look" [label="Look\n(Concept)", fillcolor="#4CAF50"];
+  "concept_while" [label="While\n(Concept)", fillcolor="#4CAF50"];
+  "node_prog_seg_04" [label="If arr of mid equals target, return\n(LectureSegment)", fillcolor="#607D8B"];
+  "node_prog_seg_05" [label="Now let us analyze the time complex\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_because" [label="Because\n(Concept)", fillcolor="#4CAF50"];
+
+  "node_prog_seg_01" -> "node_prog_vis_01" [label="corresponds_to", style="dashed", color="#D32F2F"];
+  "concept_for_finding_target_keys_in_loga" -> "node_prog_vis_01" [label="explains", style="dashed", color="#D32F2F"];
+  "node_prog_seg_02" -> "node_prog_vis_02" [label="corresponds_to", style="dashed", color="#D32F2F"];
+  "concept_before" -> "node_prog_vis_02" [label="explains", style="dashed", color="#D32F2F"];
+  "concept_binary_search" -> "node_prog_vis_02" [label="explains", style="dashed", color="#D32F2F"];
+  "concept_sorted_arrays" -> "node_prog_vis_02" [label="explains", style="dashed", color="#D32F2F"];
+  "concept_sorted_arrays" -> "concept_binary_search" [label="requires_prerequisite", style="dashed", color="#D32F2F"];
+  "concept_array_indexing_fundamentals" -> "concept_binary_search" [label="requires_prerequisite", style="dashed", color="#D32F2F"];
+  "node_prog_seg_03" -> "node_prog_vis_03" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_look" -> "node_prog_vis_03" [label="explains", style="solid", color="#333333"];
+  "concept_while" -> "node_prog_vis_03" [label="explains", style="solid", color="#333333"];
+  "node_prog_seg_04" -> "node_prog_vis_03" [label="corresponds_to", style="solid", color="#333333"];
+  "node_prog_seg_05" -> "node_prog_vis_04" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_because" -> "node_prog_vis_04" [label="explains", style="solid", color="#333333"];
+}

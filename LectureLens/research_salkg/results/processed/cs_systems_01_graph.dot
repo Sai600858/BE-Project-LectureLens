@@ -1,0 +1,41 @@
+digraph "cs_systems_01" {
+  rankdir="LR";
+  node [shape=box, style="filled,rounded", fontname="Helvetica"];
+  edge [fontname="Helvetica", fontsize=10];
+
+  "node_os_vis_01" [label="Operating Systems: Virtual Memory a\n(VisualEvent)", fillcolor="#3F51B5"];
+  "node_os_vis_02" [label="Prerequisites: Physical Memory, RAM\n(VisualEvent)", fillcolor="#3F51B5"];
+  "node_os_vis_03" [label="Virtual Address Translation Archite\n(ArchitectureComponent)", fillcolor="#CCCCCC"];
+  "node_os_vis_04" [label="Page Table Lookup and Page Fault Ha\n(ArchitectureComponent)", fillcolor="#CCCCCC"];
+  "node_os_seg_01" [label="In this operating systems lecture, \n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_virtual_memory" [label="Virtual Memory\n(Concept)", fillcolor="#4CAF50"];
+  "node_os_seg_02" [label="Before learning Virtual Memory, one\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_before" [label="Before\n(Concept)", fillcolor="#4CAF50"];
+  "concept_physical_memory" [label="Physical Memory\n(Concept)", fillcolor="#4CAF50"];
+  "concept_cpu_addressing_basics" [label="Cpu Addressing Basics\n(Prerequisite)", fillcolor="#795548"];
+  "node_os_seg_03" [label="Examining this architecture diagram\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_examining" [label="Examining\n(Concept)", fillcolor="#4CAF50"];
+  "concept_translation_lookaside_buffer" [label="Translation Lookaside Buffer\n(Concept)", fillcolor="#4CAF50"];
+  "node_os_seg_04" [label="If a TLB miss occurs, the Memory Ma\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_memory_management_unit" [label="Memory Management Unit\n(Concept)", fillcolor="#4CAF50"];
+  "concept_page_table" [label="Page Table\n(Concept)", fillcolor="#4CAF50"];
+  "node_os_seg_05" [label="If the valid bit is zero, a Page Fa\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_page_fault" [label="Page Fault\n(Concept)", fillcolor="#4CAF50"];
+
+  "node_os_seg_01" -> "node_os_vis_01" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_virtual_memory" -> "node_os_vis_01" [label="explains", style="solid", color="#333333"];
+  "node_os_seg_02" -> "node_os_vis_02" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_before" -> "node_os_vis_02" [label="explains", style="solid", color="#333333"];
+  "concept_virtual_memory" -> "node_os_vis_02" [label="explains", style="solid", color="#333333"];
+  "concept_physical_memory" -> "node_os_vis_02" [label="explains", style="solid", color="#333333"];
+  "concept_physical_memory" -> "concept_virtual_memory" [label="requires_prerequisite", style="solid", color="#333333"];
+  "concept_cpu_addressing_basics" -> "concept_virtual_memory" [label="requires_prerequisite", style="solid", color="#333333"];
+  "node_os_seg_03" -> "node_os_vis_03" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_examining" -> "node_os_vis_03" [label="explains", style="solid", color="#333333"];
+  "concept_translation_lookaside_buffer" -> "node_os_vis_03" [label="explains", style="solid", color="#333333"];
+  "node_os_seg_04" -> "node_os_vis_04" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_memory_management_unit" -> "node_os_vis_04" [label="explains", style="solid", color="#333333"];
+  "concept_page_table" -> "node_os_vis_04" [label="explains", style="solid", color="#333333"];
+  "node_os_seg_05" -> "node_os_vis_04" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_page_fault" -> "node_os_vis_04" [label="explains", style="solid", color="#333333"];
+}

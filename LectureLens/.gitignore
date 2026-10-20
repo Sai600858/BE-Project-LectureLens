@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+package-lock.json.backup
+
+# Environment variables (contains API keys / secrets)
+.env
+.env.*
+.env.local
+.env.*.local
+*.env
+
+# Database files & SQLite
+data/
+server/data/
+*.sqlite
+*.sqlite3
+*.db
+
+# Build output
+dist/
+build/
+target/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+
+# Temp files & Media
+temp_audio/
+*.tmp
+*.webm
+*.mp4
+*.pdf
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

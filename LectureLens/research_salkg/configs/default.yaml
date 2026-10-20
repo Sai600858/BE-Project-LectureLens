@@ -1,0 +1,74 @@
+# Default Configuration for SALKG Algorithm Pipeline
+pipeline:
+  name: "salkg_default"
+  version: "0.1.0"
+  random_seed: 42
+
+# Candidate Generation
+candidate_generation:
+  max_temporal_distance: 180.0   # seconds (+/- 3 minutes maximum window)
+  top_k_candidates: 5
+
+# Baseline Alignment Parameters
+baselines:
+  temporal:
+    tau: 45.0                    # Exponential temporal decay scale in seconds
+  semantic:
+    ngram_range: [1, 2]
+    min_df: 1
+    similarity_metric: "cosine"
+  combined:
+    weight_temporal: 0.50
+    weight_semantic: 0.50
+    tau: 45.0
+
+# Proposed Subject-Adaptive Parameters (Default prior when subject is unknown)
+proposed:
+  default_tau: 45.0
+  adaptive_weights:
+    mathematics:
+      weight_temporal: 0.25
+      weight_semantic: 0.35
+      weight_content_type: 0.20
+      weight_symbol_overlap: 0.20
+    programming:
+      weight_temporal: 0.25
+      weight_semantic: 0.30
+      weight_content_type: 0.25
+      weight_identifier_overlap: 0.20
+    physics_electronics:
+      weight_temporal: 0.30
+      weight_semantic: 0.30
+      weight_content_type: 0.20
+      weight_symbol_overlap: 0.20
+    general_cs:
+      weight_temporal: 0.35
+      weight_semantic: 0.40
+      weight_content_type: 0.15
+      weight_identifier_overlap: 0.10
+    unknown:
+      weight_temporal: 0.40
+      weight_semantic: 0.40
+      weight_content_type: 0.20
+      weight_symbol_overlap: 0.00
+
+# Sequence Optimization Parameters
+sequence_optimizer:
+  enabled: true
+  transition_penalty: 0.15       # Penalty for moving to non-adjacent slide
+  backward_jump_penalty: 0.35    # Penalty for moving backwards in time
+  same_slide_bonus: 0.05         # Bonus for staying on the same active visual event
+
+# Confidence Calibration and Selective Prediction
+confidence:
+  acceptance_threshold: 0.32    # Below this score, candidate is rejected
+  review_threshold: 0.45        # Between acceptance and review is flagged for verification
+  margin_threshold: 0.03        # Minimum margin between top-1 and top-2 candidate
+  abstention_policy: "selective_review"
+
+# Graph Construction and Validation
+graph:
+  enforce_dag_for_prerequisites: true
+  fuzzy_concept_match_threshold: 0.85
+  min_evidence_score: 0.30
+  allow_inferred_relations: false

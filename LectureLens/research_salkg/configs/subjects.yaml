@@ -1,0 +1,353 @@
+# Subject-Specific Schemas and Ontologies for SALKG
+
+subjects:
+  mathematics:
+    display_name: "Mathematics"
+    description: "Calculus, Linear Algebra, Real Analysis, Discrete Math, Differential Equations"
+    node_types:
+      - Concept
+      - Definition
+      - Formula
+      - Theorem
+      - Lemma
+      - DerivationStep
+      - WorkedExample
+      - Prerequisite
+      - Result
+      - LectureSegment
+      - VisualEvent
+    relation_types:
+      - explains
+      - exemplifies
+      - defines
+      - derives
+      - uses
+      - requires_prerequisite
+      - corresponds_to
+      - appears_at
+      - contradicts
+    dag_relations:
+      - requires_prerequisite
+      - derives
+    content_types:
+      - formula
+      - equation
+      - derivation
+      - graph
+      - slide_text
+    keywords:
+      - theorem
+      - proof
+      - lemma
+      - integral
+      - derivative
+      - differential
+      - matrix
+      - vector
+      - eigenvector
+      - eigenvalue
+      - limit
+      - series
+      - convergence
+      - calculus
+      - algebra
+      - polynomial
+      - continuous
+      - function
+      - gradient
+    symbol_indicators:
+      - "\\int"
+      - "\\sum"
+      - "\\frac"
+      - "\\partial"
+      - "\\lambda"
+      - "\\nabla"
+      - "\\infty"
+      - "\\alpha"
+      - "\\beta"
+      - "\\theta"
+      - "dx"
+      - "dy"
+      - "\\cdot"
+      - "\\approx"
+
+  programming:
+    display_name: "Computer Programming and Algorithms"
+    description: "Data Structures, Algorithms, Software Engineering, Systems Programming"
+    node_types:
+      - Concept
+      - Algorithm
+      - DataStructure
+      - CodeBlock
+      - Function
+      - Input
+      - Output
+      - Complexity
+      - Prerequisite
+      - Example
+      - LectureSegment
+      - VisualEvent
+    relation_types:
+      - explains
+      - exemplifies
+      - defines
+      - implements
+      - produces
+      - uses
+      - requires_prerequisite
+      - corresponds_to
+      - appears_at
+      - contradicts
+    dag_relations:
+      - requires_prerequisite
+    content_types:
+      - code_snippet
+      - pseudo_code
+      - terminal_output
+      - architecture_diagram
+      - slide_text
+    keywords:
+      - function
+      - class
+      - method
+      - array
+      - linked_list
+      - tree
+      - graph
+      - recursion
+      - pointer
+      - memory
+      - complexity
+      - big_o
+      - sorting
+      - stack
+      - queue
+      - hash_table
+      - binary_search
+      - dynamic_programming
+      - variable
+      - loop
+      - iteration
+    code_indicators:
+      - "def "
+      - "class "
+      - "public static void"
+      - "return "
+      - "import "
+      - "include <"
+      - "for ("
+      - "while ("
+      - "int "
+      - "void "
+      - "{"
+      - "}"
+      - ";"
+      - "->"
+      - "=>"
+
+  physics_electronics:
+    display_name: "Physics and Electronics"
+    description: "Circuit Analysis, Electromagnetism, Quantum Mechanics, Solid State Physics"
+    node_types:
+      - Concept
+      - PhysicalQuantity
+      - Formula
+      - Component
+      - Diagram
+      - Law
+      - Measurement
+      - Derivation
+      - Prerequisite
+      - LectureSegment
+      - VisualEvent
+    relation_types:
+      - explains
+      - exemplifies
+      - defines
+      - derives
+      - uses
+      - requires_prerequisite
+      - corresponds_to
+      - appears_at
+      - contradicts
+    dag_relations:
+      - requires_prerequisite
+    content_types:
+      - circuit_diagram
+      - physical_diagram
+      - formula
+      - measurement_plot
+      - slide_text
+    keywords:
+      - voltage
+      - current
+      - resistance
+      - capacitance
+      - inductance
+      - ohm
+      - kirchhoff
+      - magnetic
+      - electric
+      - frequency
+      - impedance
+      - semiconductor
+      - transistor
+      - diode
+      - photon
+      - wave
+      - velocity
+      - acceleration
+      - force
+      - energy
+      - power
+    symbol_indicators:
+      - "V = IR"
+      - "omega"
+      - "mu_0"
+      - "epsilon_0"
+      - "Hz"
+      - "kHz"
+      - "MHz"
+      - "pF"
+      - "uF"
+      - "mA"
+
+  general_cs:
+    display_name: "General Computer Science and Systems"
+    description: "Operating Systems, Computer Networks, Database Systems, Computer Architecture"
+    node_types:
+      - Concept
+      - Definition
+      - ArchitectureComponent
+      - Process
+      - Algorithm
+      - Protocol
+      - Example
+      - Prerequisite
+      - LectureSegment
+      - VisualEvent
+    relation_types:
+      - explains
+      - exemplifies
+      - defines
+      - uses
+      - requires_prerequisite
+      - corresponds_to
+      - appears_at
+      - contradicts
+    dag_relations:
+      - requires_prerequisite
+    content_types:
+      - architecture_diagram
+      - protocol_sequence
+      - table
+      - slide_text
+    keywords:
+      - process
+      - thread
+      - cpu
+      - cache
+      - operating_system
+      - deadlock
+      - memory_management
+      - virtual_memory
+      - tcp
+      - ip
+      - packet
+      - socket
+      - database
+      - transaction
+      - acid properties
+      - sql
+      - normalization
+      - schema
+      - protocol
+      - client_server
+
+  biology:
+    display_name: "Biology and Life Sciences"
+    description: "Physiology, Anatomy, Cell Biology, Organ Systems, Genetics, Biochemistry"
+    node_types:
+      - Concept
+      - Organ
+      - AnatomicalStructure
+      - BiologicalProcess
+      - FunctionalUnit
+      - ChemicalSubstance
+      - Organism
+      - Classification
+      - Prerequisite
+      - Definition
+      - LectureSegment
+      - VisualEvent
+    relation_types:
+      - explains
+      - exemplifies
+      - defines
+      - regulates
+      - has_part
+      - functional_unit_of
+      - requires_prerequisite
+      - corresponds_to
+      - appears_at
+      - contradicts
+    dag_relations:
+      - requires_prerequisite
+    content_types:
+      - anatomical_diagram
+      - process_flowchart
+      - classification_chart
+      - diagram
+      - slide_text
+    keywords:
+      - biology
+      - excretion
+      - homeostasis
+      - kidney
+      - nephron
+      - ammonia
+      - urea
+      - uric acid
+      - osmoregulation
+      - nitrogenous waste
+      - ammonotelism
+      - ureotelism
+      - uricotelism
+      - renal pelvis
+      - hilum
+      - cortex
+      - medulla
+      - bertini
+      - organism
+      - cell
+      - tissue
+      - organ
+      - physiology
+      - anatomy
+      - filtration
+
+  unknown:
+    display_name: "General / Unknown"
+    description: "Generic lecture schema when subject cannot be determined with sufficient confidence"
+    node_types:
+      - Concept
+      - Definition
+      - Example
+      - Prerequisite
+      - LectureSegment
+      - VisualEvent
+    relation_types:
+      - explains
+      - exemplifies
+      - defines
+      - uses
+      - requires_prerequisite
+      - corresponds_to
+      - appears_at
+      - contradicts
+    dag_relations:
+      - requires_prerequisite
+    content_types:
+      - slide_text
+      - diagram
+      - general_figure

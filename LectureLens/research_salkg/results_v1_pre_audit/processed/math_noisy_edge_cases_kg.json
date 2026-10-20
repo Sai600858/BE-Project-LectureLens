@@ -1,0 +1,531 @@
+{
+  "lecture_id": "math_noisy_edge_cases",
+  "subject": "mathematics",
+  "nodes": [
+    {
+      "node_id": "node_edge_vis_01",
+      "label": "Polynomial Derivative: f(x) = x^2, f'(x) = 2x",
+      "node_type": "Formula",
+      "subject": "mathematics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "edge_vis_01"
+      ],
+      "timestamps": [
+        4.0
+      ],
+      "attributes": {
+        "visual_type": "formula",
+        "extracted_text": "Polynomial Derivative: f(x) = x^2, f'(x) = 2x",
+        "formula_latex": "f'(x) = 2x",
+        "code_content": null,
+        "description": "Polynomial slide first presentation"
+      }
+    },
+    {
+      "node_id": "node_edge_vis_02",
+      "label": "Trigonometric Derivative: \\frac{d}{dx}[\\sin(x)] = \\cos(x)",
+      "node_type": "Formula",
+      "subject": "mathematics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "edge_vis_02"
+      ],
+      "timestamps": [
+        39.0
+      ],
+      "attributes": {
+        "visual_type": "formula",
+        "extracted_text": "Trigonometric Derivative: \\frac{d}{dx}[\\sin(x)] = \\cos(x)",
+        "formula_latex": "\\frac{d}{dx}[\\sin(x)] = \\cos(x)",
+        "code_content": null,
+        "description": "Trig derivative slide"
+      }
+    },
+    {
+      "node_id": "node_edge_vis_01_repeat",
+      "label": "Polynomial Derivative (Repeated): f(x) = x^n, f'(x) = n x^{n",
+      "node_type": "Formula",
+      "subject": "mathematics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "edge_vis_01_repeat"
+      ],
+      "timestamps": [
+        83.0
+      ],
+      "attributes": {
+        "visual_type": "formula",
+        "extracted_text": "Polynomial Derivative (Repeated): f(x) = x^n, f'(x) = n x^{n-1}",
+        "formula_latex": "f'(x) = n x^{n-1}",
+        "code_content": null,
+        "description": "Repeated polynomial slide returned to by lecturer"
+      }
+    },
+    {
+      "node_id": "node_edge_vis_03_noisy_ocr",
+      "label": "Trig Derv: d/dx[cos x] = -sin x -- noisy 0CR artifacts #$%!?",
+      "node_type": "Formula",
+      "subject": "mathematics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "edge_vis_03_noisy_ocr"
+      ],
+      "timestamps": [
+        145.0
+      ],
+      "attributes": {
+        "visual_type": "formula",
+        "extracted_text": "Trig Derv: d/dx[cos x] = -sin x -- noisy 0CR artifacts #$%!?",
+        "formula_latex": "\\frac{d}{dx}[\\cos(x)] = -\\sin(x)",
+        "code_content": null,
+        "description": "Slide with OCR noise"
+      }
+    },
+    {
+      "node_id": "node_edge_vis_04_contradiction",
+      "label": "Plot of Decreasing Function: Slope f'(x) < 0 (Downward Monot",
+      "node_type": "ArchitectureComponent",
+      "subject": "mathematics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "edge_vis_04_contradiction"
+      ],
+      "timestamps": [
+        250.0
+      ],
+      "attributes": {
+        "visual_type": "diagram",
+        "extracted_text": "Plot of Decreasing Function: Slope f'(x) < 0 (Downward Monotonic Curve)",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Graph with downward slope contradicting verbal assertion"
+      }
+    },
+    {
+      "node_id": "node_edge_seg_01",
+      "label": "Today we revisit derivatives. Look at this equatio...",
+      "node_type": "LectureSegment",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "edge_seg_01"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        5.0,
+        35.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_stress",
+        "text": "Today we revisit derivatives. Look at this equation showing f of x equals x squared."
+      }
+    },
+    {
+      "node_id": "concept_look",
+      "label": "Look",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "edge_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "edge_vis_01"
+      ],
+      "timestamps": [
+        5.0
+      ],
+      "attributes": {
+        "canonical_name": "look"
+      }
+    },
+    {
+      "node_id": "node_edge_seg_02",
+      "label": "Now we move forward to trigonometric functions. He...",
+      "node_type": "LectureSegment",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "edge_seg_02"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        40.0,
+        80.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_stress",
+        "text": "Now we move forward to trigonometric functions. Here is the derivative of sine of x."
+      }
+    },
+    {
+      "node_id": "concept_here",
+      "label": "Here",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "edge_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "edge_vis_02"
+      ],
+      "timestamps": [
+        40.0
+      ],
+      "attributes": {
+        "canonical_name": "here"
+      }
+    },
+    {
+      "node_id": "node_edge_seg_03",
+      "label": "Let us go back to our earlier slide on polynomial ...",
+      "node_type": "LectureSegment",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "edge_seg_03"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        85.0,
+        130.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_stress",
+        "text": "Let us go back to our earlier slide on polynomial powers. As we saw on the polynomial slide earlier, power rule states nx to the n minus 1."
+      }
+    },
+    {
+      "node_id": "concept_states_nx_to_the_n_minus_1",
+      "label": "States Nx To The N Minus 1",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "edge_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "edge_vis_01_repeat"
+      ],
+      "timestamps": [
+        85.0
+      ],
+      "attributes": {
+        "canonical_name": "states nx to the n minus 1"
+      }
+    },
+    {
+      "node_id": "node_edge_seg_04",
+      "label": "Notice this noisy transcription: the drivative of ...",
+      "node_type": "LectureSegment",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "edge_seg_04"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        170.0,
+        220.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_stress",
+        "text": "Notice this noisy transcription: the drivative of cos x is neg shine x with missing coefficients."
+      }
+    },
+    {
+      "node_id": "concept_notice",
+      "label": "Notice",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "edge_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "edge_vis_03_noisy_ocr"
+      ],
+      "timestamps": [
+        170.0
+      ],
+      "attributes": {
+        "canonical_name": "notice"
+      }
+    },
+    {
+      "node_id": "node_edge_seg_05",
+      "label": "Now look closely at the curve on screen. The spoke...",
+      "node_type": "LectureSegment",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "edge_seg_05"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        260.0,
+        320.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_stress",
+        "text": "Now look closely at the curve on screen. The spoken explanation claims the slope is strictly positive, but the visual plot clearly shows a downward negative slope. This contradicts the graph."
+      }
+    },
+    {
+      "node_id": "concept_this",
+      "label": "This",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "edge_seg_05"
+      ],
+      "provenance_visual_ids": [
+        "edge_vis_04_contradiction"
+      ],
+      "timestamps": [
+        260.0
+      ],
+      "attributes": {
+        "canonical_name": "this"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "node_edge_seg_01",
+      "target_id": "node_edge_vis_01",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "edge_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "edge_vis_01"
+      ],
+      "timestamps": [
+        5.0,
+        4.0
+      ],
+      "alignment_score": 0.5365,
+      "calibrated_confidence": 0.5885,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_look",
+      "target_id": "node_edge_vis_01",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "edge_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "edge_vis_01"
+      ],
+      "timestamps": [
+        5.0
+      ],
+      "alignment_score": 0.5365,
+      "calibrated_confidence": 0.5885,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_edge_seg_02",
+      "target_id": "node_edge_vis_02",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "edge_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "edge_vis_02"
+      ],
+      "timestamps": [
+        40.0,
+        39.0
+      ],
+      "alignment_score": 0.4438,
+      "calibrated_confidence": 0.3405,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_here",
+      "target_id": "node_edge_vis_02",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "edge_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "edge_vis_02"
+      ],
+      "timestamps": [
+        40.0
+      ],
+      "alignment_score": 0.4438,
+      "calibrated_confidence": 0.3405,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_edge_seg_03",
+      "target_id": "node_edge_vis_01_repeat",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "edge_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "edge_vis_01_repeat"
+      ],
+      "timestamps": [
+        85.0,
+        83.0
+      ],
+      "alignment_score": 0.3852,
+      "calibrated_confidence": 0.3527,
+      "validation_status": "unresolved",
+      "is_explicit": true,
+      "validation_issues": [
+        "Low alignment score (0.385 < 0.40)."
+      ]
+    },
+    {
+      "source_id": "concept_states_nx_to_the_n_minus_1",
+      "target_id": "node_edge_vis_01_repeat",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "edge_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "edge_vis_01_repeat"
+      ],
+      "timestamps": [
+        85.0
+      ],
+      "alignment_score": 0.3852,
+      "calibrated_confidence": 0.3527,
+      "validation_status": "unresolved",
+      "is_explicit": true,
+      "validation_issues": [
+        "Low alignment score (0.385 < 0.40)."
+      ]
+    },
+    {
+      "source_id": "node_edge_seg_04",
+      "target_id": "node_edge_vis_03_noisy_ocr",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "edge_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "edge_vis_03_noisy_ocr"
+      ],
+      "timestamps": [
+        170.0,
+        145.0
+      ],
+      "alignment_score": 0.3692,
+      "calibrated_confidence": 0.3429,
+      "validation_status": "unresolved",
+      "is_explicit": true,
+      "validation_issues": [
+        "Low alignment score (0.369 < 0.40)."
+      ]
+    },
+    {
+      "source_id": "concept_notice",
+      "target_id": "node_edge_vis_03_noisy_ocr",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "edge_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "edge_vis_03_noisy_ocr"
+      ],
+      "timestamps": [
+        170.0
+      ],
+      "alignment_score": 0.3692,
+      "calibrated_confidence": 0.3429,
+      "validation_status": "unresolved",
+      "is_explicit": true,
+      "validation_issues": [
+        "Low alignment score (0.369 < 0.40)."
+      ]
+    },
+    {
+      "source_id": "node_edge_seg_05",
+      "target_id": "node_edge_vis_04_contradiction",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "edge_seg_05"
+      ],
+      "provenance_visual_ids": [
+        "edge_vis_04_contradiction"
+      ],
+      "timestamps": [
+        260.0,
+        250.0
+      ],
+      "alignment_score": 0.4944,
+      "calibrated_confidence": 0.6016,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_this",
+      "target_id": "node_edge_vis_04_contradiction",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "edge_seg_05"
+      ],
+      "provenance_visual_ids": [
+        "edge_vis_04_contradiction"
+      ],
+      "timestamps": [
+        260.0
+      ],
+      "alignment_score": 0.4944,
+      "calibrated_confidence": 0.6016,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_edge_vis_04_contradiction",
+      "target_id": "concept_this",
+      "relation_type": "contradicts",
+      "provenance_segment_ids": [
+        "edge_seg_05"
+      ],
+      "provenance_visual_ids": [
+        "edge_vis_04_contradiction"
+      ],
+      "timestamps": [
+        260.0
+      ],
+      "alignment_score": 0.4944,
+      "calibrated_confidence": 0.6016,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    }
+  ],
+  "validation_summary": {
+    "initial_node_count": 15,
+    "initial_edge_count": 11,
+    "schema_violations": 1,
+    "broken_timestamps": 0,
+    "missing_provenance": 0,
+    "cycles_detected": 0,
+    "duplicates_merged": 0,
+    "accepted_edges": 7,
+    "unresolved_edges": 4,
+    "rejected_edges": 0,
+    "issues": [
+      "Node 'node_edge_vis_04_contradiction' type 'ArchitectureComponent' not in allowed schema for subject 'mathematics'. Allowed: ['Concept', 'Definition', 'DerivationStep', 'Formula', 'LectureSegment', 'Lemma', 'Prerequisite', 'Result', 'Theorem', 'UnknownEntity', 'VisualEvent', 'WorkedExample']",
+      "Low alignment score (0.385 < 0.40).",
+      "Low alignment score (0.385 < 0.40).",
+      "Low alignment score (0.369 < 0.40).",
+      "Low alignment score (0.369 < 0.40)."
+    ],
+    "final_node_count": 15,
+    "final_edge_count": 11
+  }
+}

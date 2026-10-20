@@ -1,0 +1,40 @@
+digraph "math_calculus_01" {
+  rankdir="LR";
+  node [shape=box, style="filled,rounded", fontname="Helvetica"];
+  edge [fontname="Helvetica", fontsize=10];
+
+  "node_math_vis_01" [label="Calculus Lecture: The Chain Rule fo\n(VisualEvent)", fillcolor="#3F51B5"];
+  "node_math_vis_02" [label="Prerequisites: Power Rule, Product \n(VisualEvent)", fillcolor="#3F51B5"];
+  "node_math_vis_03" [label="Theorem: Chain Rule \frac{dy}{dx} =\n(Formula)", fillcolor="#9C27B0"];
+  "node_math_vis_04" [label="Worked Example: y = \sin(x^2), \fra\n(Formula)", fillcolor="#9C27B0"];
+  "node_math_seg_01" [label="Welcome everyone. Today we discuss \n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_for_finding_the_derivative_of_c" [label="For Finding The Derivative Of C\n(Concept)", fillcolor="#4CAF50"];
+  "node_math_seg_02" [label="Before we discuss the Chain Rule, o\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_and_basic_differentiation" [label="And Basic Differentiation\n(Concept)", fillcolor="#4CAF50"];
+  "concept_power_rule" [label="Power Rule\n(Prerequisite)", fillcolor="#795548"];
+  "concept_chain_rule" [label="Chain Rule\n(Concept)", fillcolor="#4CAF50"];
+  "concept_basic_differentiation" [label="Basic Differentiation\n(Prerequisite)", fillcolor="#795548"];
+  "node_math_seg_03" [label="Let us state the formal theorem. If\n(LectureSegment)", fillcolor="#607D8B"];
+  "node_math_seg_04" [label="From this theorem we derive the der\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_we_derive_the_derivative_of_com" [label="We Derive The Derivative Of Com\n(Concept)", fillcolor="#4CAF50"];
+  "node_math_seg_05" [label="For example, consider the function \n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_here" [label="Here\n(Concept)", fillcolor="#4CAF50"];
+  "node_math_seg_06" [label="Multiplying the outer derivative co\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_multiplying" [label="Multiplying\n(Concept)", fillcolor="#4CAF50"];
+
+  "node_math_seg_01" -> "node_math_vis_01" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_for_finding_the_derivative_of_c" -> "node_math_vis_01" [label="explains", style="solid", color="#333333"];
+  "node_math_seg_02" -> "node_math_vis_02" [label="corresponds_to", style="dashed", color="#D32F2F"];
+  "concept_and_basic_differentiation" -> "node_math_vis_02" [label="explains", style="dashed", color="#D32F2F"];
+  "concept_power_rule" -> "concept_chain_rule" [label="requires_prerequisite", style="dashed", color="#D32F2F"];
+  "concept_basic_differentiation" -> "concept_chain_rule" [label="requires_prerequisite", style="dashed", color="#D32F2F"];
+  "node_math_seg_03" -> "node_math_vis_03" [label="corresponds_to", style="dashed", color="#D32F2F"];
+  "node_math_seg_04" -> "node_math_vis_03" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_we_derive_the_derivative_of_com" -> "node_math_vis_03" [label="explains", style="solid", color="#333333"];
+  "node_math_vis_03" -> "concept_we_derive_the_derivative_of_com" [label="derives", style="solid", color="#333333"];
+  "node_math_seg_05" -> "node_math_vis_04" [label="corresponds_to", style="dashed", color="#D32F2F"];
+  "concept_here" -> "node_math_vis_04" [label="explains", style="dashed", color="#D32F2F"];
+  "node_math_vis_04" -> "concept_here" [label="exemplifies", style="dashed", color="#D32F2F"];
+  "node_math_seg_06" -> "node_math_vis_04" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_multiplying" -> "node_math_vis_04" [label="explains", style="solid", color="#333333"];
+}

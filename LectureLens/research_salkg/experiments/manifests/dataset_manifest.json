@@ -1,0 +1,39 @@
+{
+  "dataset_version": "1.0.0",
+  "created_at": "2026-10-14",
+  "split_strategy": "lecture_level_held_out",
+  "dev_lectures": [
+    {
+      "lecture_id": "math_calculus_01",
+      "subject": "mathematics",
+      "file": "research_salkg/data/synthetic/math_calculus_chain_rule.json"
+    },
+    {
+      "lecture_id": "cs_programming_01",
+      "subject": "programming",
+      "file": "research_salkg/data/synthetic/cs_programming_binary_search.json"
+    }
+  ],
+  "test_lectures": [
+    {
+      "lecture_id": "physics_rlc_01",
+      "subject": "physics_electronics",
+      "file": "research_salkg/data/synthetic/physics_electronics_rlc.json"
+    },
+    {
+      "lecture_id": "cs_systems_01",
+      "subject": "general_cs",
+      "file": "research_salkg/data/synthetic/cs_systems_virtual_memory.json"
+    },
+    {
+      "lecture_id": "math_noisy_edge_cases",
+      "subject": "mathematics",
+      "file": "research_salkg/data/synthetic/math_calculus_noisy_edge_cases.json"
+    },
+    {
+      "lecture_id": "humanities_philosophy_01",
+      "subject": "unknown",
+      "file": "research_salkg/data/synthetic/humanities_philosophy_unknown.json"
+    }
+  ]
+}

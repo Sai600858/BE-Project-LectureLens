@@ -1,0 +1,79 @@
+# Experiment Execution Protocol Configuration
+
+experiments:
+  random_seed: 42
+  splits_manifest: "research_salkg/experiments/manifests/dataset_manifest.json"
+  output_dir: "research_salkg/results"
+
+evaluation:
+  alignment_metrics:
+    - precision
+    - recall
+    - f1
+    - coverage
+    - false_match_rate
+  graph_metrics:
+    - node_precision
+    - node_recall
+    - node_f1
+    - edge_precision
+    - edge_recall
+    - edge_f1
+    - evidence_attribution_accuracy
+    - unsupported_relation_rate
+    - duplicate_entity_rate
+    - consistency_violations
+  efficiency_metrics:
+    - runtime_seconds
+    - time_per_segment_ms
+    - memory_mb
+
+ablations:
+  - name: "no_subject_conditioning"
+    description: "Remove subject-adaptive feature weights; use fixed uniform weights"
+    override:
+      proposed:
+        use_subject_conditioning: false
+
+  - name: "no_temporal_feature"
+    description: "Exclude temporal decay score from alignment objective"
+    override:
+      proposed:
+        weight_temporal_override: 0.0
+
+  - name: "no_semantic_feature"
+    description: "Exclude text semantic similarity score from alignment objective"
+    override:
+      proposed:
+        weight_semantic_override: 0.0
+
+  - name: "no_content_type_compatibility"
+    description: "Exclude visual-to-speech content type compatibility matrix"
+    override:
+      proposed:
+        weight_content_type_override: 0.0
+
+  - name: "no_symbol_identifier_overlap"
+    description: "Exclude mathematical symbol and code identifier overlap features"
+    override:
+      proposed:
+        weight_symbol_identifier_override: 0.0
+
+  - name: "no_sequence_optimization"
+    description: "Use greedy local matching without dynamic programming transition constraints"
+    override:
+      sequence_optimizer:
+        enabled: false
+
+  - name: "no_confidence_rejection"
+    description: "Accept all top-1 candidate alignments regardless of score or margin"
+    override:
+      confidence:
+        acceptance_threshold: 0.0
+        margin_threshold: 0.0
+
+  - name: "no_graph_validation"
+    description: "Output knowledge graph without cycle checking, deduplication, or unsupported relation filtering"
+    override:
+      graph:
+        enable_validation: false

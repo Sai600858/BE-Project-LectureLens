@@ -1,0 +1,670 @@
+{
+  "lecture_id": "math_calculus_01",
+  "subject": "mathematics",
+  "nodes": [
+    {
+      "node_id": "node_math_vis_01",
+      "label": "Calculus Lecture: The Chain Rule for Composite Functions",
+      "node_type": "VisualEvent",
+      "subject": "mathematics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "math_vis_01"
+      ],
+      "timestamps": [
+        4.0
+      ],
+      "attributes": {
+        "visual_type": "slide_text",
+        "extracted_text": "Calculus Lecture: The Chain Rule for Composite Functions",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Title slide introducing Chain Rule"
+      }
+    },
+    {
+      "node_id": "node_math_vis_02",
+      "label": "Prerequisites: Power Rule, Product Rule, Derivative of Eleme",
+      "node_type": "VisualEvent",
+      "subject": "mathematics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "math_vis_02"
+      ],
+      "timestamps": [
+        27.0
+      ],
+      "attributes": {
+        "visual_type": "slide_text",
+        "extracted_text": "Prerequisites: Power Rule, Product Rule, Derivative of Elementary Functions",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Prerequisite concept list"
+      }
+    },
+    {
+      "node_id": "node_math_vis_03",
+      "label": "Theorem: Chain Rule \\frac{dy}{dx} = \\frac{dy}{du} \\cdot \\fra",
+      "node_type": "Formula",
+      "subject": "mathematics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "math_vis_03"
+      ],
+      "timestamps": [
+        56.0
+      ],
+      "attributes": {
+        "visual_type": "formula",
+        "extracted_text": "Theorem: Chain Rule \\frac{dy}{dx} = \\frac{dy}{du} \\cdot \\frac{du}{dx}",
+        "formula_latex": "\\frac{dy}{dx} = \\frac{dy}{du} \\cdot \\frac{du}{dx}",
+        "code_content": null,
+        "description": "Formal Chain Rule theorem formulation"
+      }
+    },
+    {
+      "node_id": "node_math_vis_04",
+      "label": "Worked Example: y = \\sin(x^2), \\frac{dy}{dx} = 2x \\cos(x^2)",
+      "node_type": "Formula",
+      "subject": "mathematics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "math_vis_04"
+      ],
+      "timestamps": [
+        148.0
+      ],
+      "attributes": {
+        "visual_type": "formula",
+        "extracted_text": "Worked Example: y = \\sin(x^2), \\frac{dy}{dx} = 2x \\cos(x^2)",
+        "formula_latex": "\\frac{d}{dx}[\\sin(x^2)] = 2x \\cos(x^2)",
+        "code_content": null,
+        "description": "Step by step worked derivative example"
+      }
+    },
+    {
+      "node_id": "node_math_seg_01",
+      "label": "Welcome everyone. Today we discuss the Chain Rule ...",
+      "node_type": "LectureSegment",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "math_seg_01"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        5.0,
+        25.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_1",
+        "text": "Welcome everyone. Today we discuss the Chain Rule for finding the derivative of composite functions."
+      }
+    },
+    {
+      "node_id": "concept_for_finding_the_derivative_of_c",
+      "label": "For Finding The Derivative Of C",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "math_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_01"
+      ],
+      "timestamps": [
+        5.0
+      ],
+      "attributes": {
+        "canonical_name": "for finding the derivative of c"
+      }
+    },
+    {
+      "node_id": "node_math_seg_02",
+      "label": "Before we discuss the Chain Rule, one must underst...",
+      "node_type": "LectureSegment",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "math_seg_02"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        28.0,
+        55.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_1",
+        "text": "Before we discuss the Chain Rule, one must understand the Power Rule and basic differentiation."
+      }
+    },
+    {
+      "node_id": "concept_and_basic_differentiation",
+      "label": "And Basic Differentiation",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "math_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_02"
+      ],
+      "timestamps": [
+        28.0
+      ],
+      "attributes": {
+        "canonical_name": "and basic differentiation"
+      }
+    },
+    {
+      "node_id": "concept_power_rule",
+      "label": "Power Rule",
+      "node_type": "Prerequisite",
+      "subject": "mathematics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [],
+      "timestamps": [],
+      "attributes": {}
+    },
+    {
+      "node_id": "concept_chain_rule",
+      "label": "Chain Rule",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [],
+      "timestamps": [],
+      "attributes": {}
+    },
+    {
+      "node_id": "concept_basic_differentiation",
+      "label": "Basic Differentiation",
+      "node_type": "Prerequisite",
+      "subject": "mathematics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [],
+      "timestamps": [],
+      "attributes": {}
+    },
+    {
+      "node_id": "node_math_seg_03",
+      "label": "Let us state the formal theorem. If y equals f of ...",
+      "node_type": "LectureSegment",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "math_seg_03"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        58.0,
+        95.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_1",
+        "text": "Let us state the formal theorem. If y equals f of u and u equals g of x, then dy by dx equals dy by du times du by dx."
+      }
+    },
+    {
+      "node_id": "concept_let",
+      "label": "Let",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "math_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_03"
+      ],
+      "timestamps": [
+        58.0
+      ],
+      "attributes": {
+        "canonical_name": "let"
+      }
+    },
+    {
+      "node_id": "node_math_seg_04",
+      "label": "From this theorem we derive the derivative of comp...",
+      "node_type": "LectureSegment",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "math_seg_04"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        100.0,
+        145.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_1",
+        "text": "From this theorem we derive the derivative of composite expressions. Notice the inner derivative du by dx."
+      }
+    },
+    {
+      "node_id": "concept_we_derive_the_derivative_of_com",
+      "label": "We Derive The Derivative Of Com",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "math_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_03"
+      ],
+      "timestamps": [
+        100.0
+      ],
+      "attributes": {
+        "canonical_name": "we derive the derivative of com"
+      }
+    },
+    {
+      "node_id": "concept_the",
+      "label": "The",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [],
+      "timestamps": [],
+      "attributes": {}
+    },
+    {
+      "node_id": "node_math_seg_05",
+      "label": "For example, consider the function y equals sin of...",
+      "node_type": "LectureSegment",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "math_seg_05"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        150.0,
+        210.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_1",
+        "text": "For example, consider the function y equals sin of x squared. Here u equals x squared and du by dx equals 2x."
+      }
+    },
+    {
+      "node_id": "concept_for",
+      "label": "For",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "math_seg_05"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_04"
+      ],
+      "timestamps": [
+        150.0
+      ],
+      "attributes": {
+        "canonical_name": "for"
+      }
+    },
+    {
+      "node_id": "node_math_seg_06",
+      "label": "Multiplying the outer derivative cos of x squared ...",
+      "node_type": "LectureSegment",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "math_seg_06"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        215.0,
+        280.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_1",
+        "text": "Multiplying the outer derivative cos of x squared by 2x yields the final result dy by dx equals 2x cos of x squared."
+      }
+    },
+    {
+      "node_id": "concept_multiplying",
+      "label": "Multiplying",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "math_seg_06"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_04"
+      ],
+      "timestamps": [
+        215.0
+      ],
+      "attributes": {
+        "canonical_name": "multiplying"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "node_math_seg_01",
+      "target_id": "node_math_vis_01",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "math_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_01"
+      ],
+      "timestamps": [
+        5.0,
+        4.0
+      ],
+      "alignment_score": 0.4325,
+      "calibrated_confidence": 0.419,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_for_finding_the_derivative_of_c",
+      "target_id": "node_math_vis_01",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "math_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_01"
+      ],
+      "timestamps": [
+        5.0
+      ],
+      "alignment_score": 0.4325,
+      "calibrated_confidence": 0.419,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_math_seg_02",
+      "target_id": "node_math_vis_02",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "math_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_02"
+      ],
+      "timestamps": [
+        28.0,
+        27.0
+      ],
+      "alignment_score": 0.3666,
+      "calibrated_confidence": 0.2586,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_and_basic_differentiation",
+      "target_id": "node_math_vis_02",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "math_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_02"
+      ],
+      "timestamps": [
+        28.0
+      ],
+      "alignment_score": 0.3666,
+      "calibrated_confidence": 0.2586,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_power_rule",
+      "target_id": "concept_chain_rule",
+      "relation_type": "requires_prerequisite",
+      "provenance_segment_ids": [
+        "math_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_02"
+      ],
+      "timestamps": [
+        28.0
+      ],
+      "alignment_score": 0.3666,
+      "calibrated_confidence": 0.2586,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_basic_differentiation",
+      "target_id": "concept_chain_rule",
+      "relation_type": "requires_prerequisite",
+      "provenance_segment_ids": [
+        "math_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_02"
+      ],
+      "timestamps": [
+        28.0
+      ],
+      "alignment_score": 0.3666,
+      "calibrated_confidence": 0.2586,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_math_seg_03",
+      "target_id": "node_math_vis_03",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "math_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_03"
+      ],
+      "timestamps": [
+        58.0,
+        56.0
+      ],
+      "alignment_score": 0.3742,
+      "calibrated_confidence": 0.3217,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_let",
+      "target_id": "node_math_vis_03",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "math_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_03"
+      ],
+      "timestamps": [
+        58.0
+      ],
+      "alignment_score": 0.3742,
+      "calibrated_confidence": 0.3217,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_math_seg_04",
+      "target_id": "node_math_vis_03",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "math_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_03"
+      ],
+      "timestamps": [
+        100.0,
+        56.0
+      ],
+      "alignment_score": 0.4475,
+      "calibrated_confidence": 0.4434,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_we_derive_the_derivative_of_com",
+      "target_id": "node_math_vis_03",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "math_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_03"
+      ],
+      "timestamps": [
+        100.0
+      ],
+      "alignment_score": 0.4475,
+      "calibrated_confidence": 0.4434,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_math_vis_03",
+      "target_id": "concept_the",
+      "relation_type": "derives",
+      "provenance_segment_ids": [
+        "math_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_03"
+      ],
+      "timestamps": [
+        100.0
+      ],
+      "alignment_score": 0.4475,
+      "calibrated_confidence": 0.4434,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_math_seg_05",
+      "target_id": "node_math_vis_04",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "math_seg_05"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_04"
+      ],
+      "timestamps": [
+        150.0,
+        148.0
+      ],
+      "alignment_score": 0.3956,
+      "calibrated_confidence": 0.3661,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_for",
+      "target_id": "node_math_vis_04",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "math_seg_05"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_04"
+      ],
+      "timestamps": [
+        150.0
+      ],
+      "alignment_score": 0.3956,
+      "calibrated_confidence": 0.3661,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_math_vis_04",
+      "target_id": "concept_for",
+      "relation_type": "exemplifies",
+      "provenance_segment_ids": [
+        "math_seg_05"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_04"
+      ],
+      "timestamps": [
+        150.0
+      ],
+      "alignment_score": 0.3956,
+      "calibrated_confidence": 0.3661,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_math_seg_06",
+      "target_id": "node_math_vis_04",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "math_seg_06"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_04"
+      ],
+      "timestamps": [
+        215.0,
+        148.0
+      ],
+      "alignment_score": 0.4924,
+      "calibrated_confidence": 0.5354,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_multiplying",
+      "target_id": "node_math_vis_04",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "math_seg_06"
+      ],
+      "provenance_visual_ids": [
+        "math_vis_04"
+      ],
+      "timestamps": [
+        215.0
+      ],
+      "alignment_score": 0.4924,
+      "calibrated_confidence": 0.5354,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    }
+  ],
+  "validation_summary": {
+    "initial_node_count": 20,
+    "initial_edge_count": 16,
+    "schema_violations": 0,
+    "broken_timestamps": 0,
+    "missing_provenance": 0,
+    "cycles_detected": 0,
+    "duplicates_merged": 0,
+    "accepted_edges": 16,
+    "unresolved_edges": 0,
+    "rejected_edges": 0,
+    "issues": [],
+    "final_node_count": 20,
+    "final_edge_count": 16,
+    "remaining_violations": 0
+  }
+}

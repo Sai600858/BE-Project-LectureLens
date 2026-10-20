@@ -1,0 +1,635 @@
+{
+  "lecture_id": "physics_rlc_01",
+  "subject": "physics_electronics",
+  "nodes": [
+    {
+      "node_id": "node_ee_vis_01",
+      "label": "Circuit Theory: Series RLC Circuit Analysis",
+      "node_type": "VisualEvent",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "ee_vis_01"
+      ],
+      "timestamps": [
+        4.0
+      ],
+      "attributes": {
+        "visual_type": "slide_text",
+        "extracted_text": "Circuit Theory: Series RLC Circuit Analysis",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Title slide for RLC circuit"
+      }
+    },
+    {
+      "node_id": "node_ee_vis_02",
+      "label": "Prerequisites: Kirchhoff's Voltage Law (KVL), Ohm's Law, Imp",
+      "node_type": "VisualEvent",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "ee_vis_02"
+      ],
+      "timestamps": [
+        33.0
+      ],
+      "attributes": {
+        "visual_type": "slide_text",
+        "extracted_text": "Prerequisites: Kirchhoff's Voltage Law (KVL), Ohm's Law, Impedance Basics",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Prerequisite circuit laws"
+      }
+    },
+    {
+      "node_id": "node_ee_vis_03",
+      "label": "Series RLC Circuit Diagram with AC source V(t), Resistor R, ",
+      "node_type": "Diagram",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "ee_vis_03"
+      ],
+      "timestamps": [
+        69.0
+      ],
+      "attributes": {
+        "visual_type": "circuit_diagram",
+        "extracted_text": "Series RLC Circuit Diagram with AC source V(t), Resistor R, Inductor L, Capacitor C",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Schematic of Series RLC circuit"
+      }
+    },
+    {
+      "node_id": "node_ee_vis_04",
+      "label": "Resonance Frequency Formula: \\omega_0 = \\frac{1}{\\sqrt{LC}},",
+      "node_type": "Formula",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "ee_vis_04"
+      ],
+      "timestamps": [
+        139.0
+      ],
+      "attributes": {
+        "visual_type": "formula",
+        "extracted_text": "Resonance Frequency Formula: \\omega_0 = \\frac{1}{\\sqrt{LC}}, Z = R",
+        "formula_latex": "\\omega_0 = \\frac{1}{\\sqrt{LC}}",
+        "code_content": null,
+        "description": "Angular resonant frequency equation"
+      }
+    },
+    {
+      "node_id": "node_ee_seg_01",
+      "label": "Today in electric circuits we examine the Series R...",
+      "node_type": "LectureSegment",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [
+        "ee_seg_01"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        5.0,
+        30.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_ee",
+        "text": "Today in electric circuits we examine the Series RLC Circuit containing a resistor, inductor, and capacitor."
+      }
+    },
+    {
+      "node_id": "concept_series",
+      "label": "Series",
+      "node_type": "Concept",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [
+        "ee_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_01"
+      ],
+      "timestamps": [
+        5.0
+      ],
+      "attributes": {
+        "canonical_name": "series"
+      }
+    },
+    {
+      "node_id": "concept_circuit",
+      "label": "Circuit",
+      "node_type": "Concept",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [
+        "ee_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_01"
+      ],
+      "timestamps": [
+        5.0
+      ],
+      "attributes": {
+        "canonical_name": "circuit"
+      }
+    },
+    {
+      "node_id": "node_ee_seg_02",
+      "label": "Before studying the RLC circuit, one must understa...",
+      "node_type": "LectureSegment",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [
+        "ee_seg_02"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        35.0,
+        65.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_ee",
+        "text": "Before studying the RLC circuit, one must understand Kirchhoff's Voltage Law and Ohm's Law."
+      }
+    },
+    {
+      "node_id": "concept_before",
+      "label": "Before",
+      "node_type": "Concept",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [
+        "ee_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_02"
+      ],
+      "timestamps": [
+        35.0
+      ],
+      "attributes": {
+        "canonical_name": "before"
+      }
+    },
+    {
+      "node_id": "concept_kirchhoff",
+      "label": "Kirchhoff",
+      "node_type": "Concept",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [
+        "ee_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_02"
+      ],
+      "timestamps": [
+        35.0
+      ],
+      "attributes": {
+        "canonical_name": "kirchhoff"
+      }
+    },
+    {
+      "node_id": "concept_voltage_law",
+      "label": "Voltage Law",
+      "node_type": "Concept",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [
+        "ee_seg_02",
+        "ee_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_02",
+        "ee_vis_03"
+      ],
+      "timestamps": [
+        35.0,
+        70.0
+      ],
+      "attributes": {
+        "canonical_name": "voltage law"
+      }
+    },
+    {
+      "node_id": "concept_kirchhoff_s_voltage_law",
+      "label": "Kirchhoff'S Voltage Law",
+      "node_type": "Prerequisite",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [],
+      "timestamps": [],
+      "attributes": {}
+    },
+    {
+      "node_id": "concept_rlc_circuit",
+      "label": "Rlc Circuit",
+      "node_type": "Concept",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [],
+      "timestamps": [],
+      "attributes": {}
+    },
+    {
+      "node_id": "concept_ohm_s_law",
+      "label": "Ohm'S Law",
+      "node_type": "Prerequisite",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [],
+      "timestamps": [],
+      "attributes": {}
+    },
+    {
+      "node_id": "node_ee_seg_03",
+      "label": "Observe the circuit diagram. Applying Kirchhoff's ...",
+      "node_type": "LectureSegment",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [
+        "ee_seg_03"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        70.0,
+        135.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_ee",
+        "text": "Observe the circuit diagram. Applying Kirchhoff's Voltage Law gives the total voltage equals voltage across the resistor plus inductor plus capacitor."
+      }
+    },
+    {
+      "node_id": "concept_applying_kirchhoff",
+      "label": "Applying Kirchhoff",
+      "node_type": "Concept",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [
+        "ee_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_03"
+      ],
+      "timestamps": [
+        70.0
+      ],
+      "attributes": {
+        "canonical_name": "applying kirchhoff"
+      }
+    },
+    {
+      "node_id": "node_ee_seg_04",
+      "label": "From this differential equation we derive the angu...",
+      "node_type": "LectureSegment",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [
+        "ee_seg_04"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        140.0,
+        210.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_ee",
+        "text": "From this differential equation we derive the angular resonance frequency omega zero equals 1 over square root of L times C."
+      }
+    },
+    {
+      "node_id": "concept_the",
+      "label": "The",
+      "node_type": "Concept",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [],
+      "timestamps": [],
+      "attributes": {}
+    },
+    {
+      "node_id": "node_ee_seg_05",
+      "label": "At this resonance frequency, the inductive reactan...",
+      "node_type": "LectureSegment",
+      "subject": "physics_electronics",
+      "provenance_segment_ids": [
+        "ee_seg_05"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        215.0,
+        290.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_ee",
+        "text": "At this resonance frequency, the inductive reactance cancels capacitive reactance, meaning the total impedance equals purely resistance R."
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "node_ee_seg_01",
+      "target_id": "node_ee_vis_01",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "ee_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_01"
+      ],
+      "timestamps": [
+        5.0,
+        4.0
+      ],
+      "alignment_score": 0.4188,
+      "calibrated_confidence": 0.4026,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_series",
+      "target_id": "node_ee_vis_01",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "ee_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_01"
+      ],
+      "timestamps": [
+        5.0
+      ],
+      "alignment_score": 0.4188,
+      "calibrated_confidence": 0.4026,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_circuit",
+      "target_id": "node_ee_vis_01",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "ee_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_01"
+      ],
+      "timestamps": [
+        5.0
+      ],
+      "alignment_score": 0.4188,
+      "calibrated_confidence": 0.4026,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_ee_seg_02",
+      "target_id": "node_ee_vis_02",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "ee_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_02"
+      ],
+      "timestamps": [
+        35.0,
+        33.0
+      ],
+      "alignment_score": 0.679,
+      "calibrated_confidence": 0.7969,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_before",
+      "target_id": "node_ee_vis_02",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "ee_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_02"
+      ],
+      "timestamps": [
+        35.0
+      ],
+      "alignment_score": 0.679,
+      "calibrated_confidence": 0.7969,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_kirchhoff",
+      "target_id": "node_ee_vis_02",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "ee_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_02"
+      ],
+      "timestamps": [
+        35.0
+      ],
+      "alignment_score": 0.679,
+      "calibrated_confidence": 0.7969,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_voltage_law",
+      "target_id": "node_ee_vis_02",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "ee_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_02"
+      ],
+      "timestamps": [
+        35.0
+      ],
+      "alignment_score": 0.679,
+      "calibrated_confidence": 0.7969,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_kirchhoff_s_voltage_law",
+      "target_id": "concept_rlc_circuit",
+      "relation_type": "requires_prerequisite",
+      "provenance_segment_ids": [
+        "ee_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_02"
+      ],
+      "timestamps": [
+        35.0
+      ],
+      "alignment_score": 0.679,
+      "calibrated_confidence": 0.7969,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_ohm_s_law",
+      "target_id": "concept_rlc_circuit",
+      "relation_type": "requires_prerequisite",
+      "provenance_segment_ids": [
+        "ee_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_02"
+      ],
+      "timestamps": [
+        35.0
+      ],
+      "alignment_score": 0.679,
+      "calibrated_confidence": 0.7969,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_ee_seg_03",
+      "target_id": "node_ee_vis_03",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "ee_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_03"
+      ],
+      "timestamps": [
+        70.0,
+        69.0
+      ],
+      "alignment_score": 0.5275,
+      "calibrated_confidence": 0.4137,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_applying_kirchhoff",
+      "target_id": "node_ee_vis_03",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "ee_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_03"
+      ],
+      "timestamps": [
+        70.0
+      ],
+      "alignment_score": 0.5275,
+      "calibrated_confidence": 0.4137,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_voltage_law",
+      "target_id": "node_ee_vis_03",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "ee_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_03"
+      ],
+      "timestamps": [
+        70.0
+      ],
+      "alignment_score": 0.5275,
+      "calibrated_confidence": 0.4137,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_ee_seg_04",
+      "target_id": "node_ee_vis_04",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "ee_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_04"
+      ],
+      "timestamps": [
+        140.0,
+        139.0
+      ],
+      "alignment_score": 0.4772,
+      "calibrated_confidence": 0.4491,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_ee_vis_04",
+      "target_id": "concept_the",
+      "relation_type": "derives",
+      "provenance_segment_ids": [
+        "ee_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_04"
+      ],
+      "timestamps": [
+        140.0
+      ],
+      "alignment_score": 0.4772,
+      "calibrated_confidence": 0.4491,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_ee_seg_05",
+      "target_id": "node_ee_vis_04",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "ee_seg_05"
+      ],
+      "provenance_visual_ids": [
+        "ee_vis_04"
+      ],
+      "timestamps": [
+        215.0,
+        139.0
+      ],
+      "alignment_score": 0.3997,
+      "calibrated_confidence": 0.4369,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    }
+  ],
+  "validation_summary": {
+    "initial_node_count": 19,
+    "initial_edge_count": 15,
+    "schema_violations": 0,
+    "broken_timestamps": 0,
+    "missing_provenance": 0,
+    "cycles_detected": 0,
+    "duplicates_merged": 0,
+    "accepted_edges": 15,
+    "unresolved_edges": 0,
+    "rejected_edges": 0,
+    "issues": [],
+    "final_node_count": 19,
+    "final_edge_count": 15,
+    "remaining_violations": 0
+  }
+}

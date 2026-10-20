@@ -1,0 +1,71 @@
+{
+  "methods": {
+    "Baseline A (Temporal-Only)": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "coverage": 1.0
+    },
+    "Baseline B (Semantic-Only TF-IDF)": {
+      "precision": 0.8111,
+      "recall": 0.8111,
+      "f1": 0.8111,
+      "coverage": 1.0
+    },
+    "Baseline C (Independent Combined Weighted)": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "coverage": 1.0
+    },
+    "Proposed SALKG (Full Pipeline)": {
+      "precision": 1.0,
+      "recall": 0.9667,
+      "f1": 0.9815,
+      "coverage": 0.9667,
+      "knowledge_graph_edge_f1": 0.1111
+    }
+  },
+  "subject_classification": {
+    "accuracy": 0.6667,
+    "macro_f1": 0.4933,
+    "confusion_matrix": {
+      "general_cs": {
+        "general_cs": 1,
+        "mathematics": 0,
+        "physics_electronics": 0,
+        "programming": 0,
+        "unknown": 0
+      },
+      "mathematics": {
+        "general_cs": 0,
+        "mathematics": 2,
+        "physics_electronics": 0,
+        "programming": 0,
+        "unknown": 0
+      },
+      "physics_electronics": {
+        "general_cs": 0,
+        "mathematics": 0,
+        "physics_electronics": 1,
+        "programming": 0,
+        "unknown": 0
+      },
+      "programming": {
+        "general_cs": 0,
+        "mathematics": 1,
+        "physics_electronics": 0,
+        "programming": 0,
+        "unknown": 0
+      },
+      "unknown": {
+        "general_cs": 0,
+        "mathematics": 0,
+        "physics_electronics": 1,
+        "programming": 0,
+        "unknown": 0
+      }
+    },
+    "total_samples": 6
+  }
+}

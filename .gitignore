@@ -1,0 +1,39 @@
+# Root .gitignore for BE-project / LectureLens
+
+# Dependencies
+node_modules/
+LectureLens/client/node_modules/
+LectureLens/server/node_modules/
+
+# Environment variables & secrets
+.env
+.env.*
+*.env
+LectureLens/client/.env
+LectureLens/server/.env
+
+# Database & Runtime Data
+data/
+*.sqlite
+*.sqlite3
+LectureLens/server/data/
+LectureLens/server/temp_audio/
+
+# Build artifacts
+dist/
+build/
+target/
+LectureLens/client/dist/
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

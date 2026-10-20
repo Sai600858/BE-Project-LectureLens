@@ -1,0 +1,612 @@
+{
+  "lecture_id": "biology_excretory_system_01",
+  "subject": "biology",
+  "nodes": [
+    {
+      "node_id": "node_bio_vis_01",
+      "label": "Types of Excretion based on Nitrogenous Waste. Classificatio",
+      "node_type": "VisualEvent",
+      "subject": "biology",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "bio_vis_01"
+      ],
+      "timestamps": [
+        0.0
+      ],
+      "attributes": {
+        "visual_type": "diagram",
+        "extracted_text": "Types of Excretion based on Nitrogenous Waste. Classification of organisms by primary nitrogenous waste product and water requirement: Ammonotelism (ammonia, highly toxic, needs most water), Ureotelism (urea, moderately toxic, needs moderate water), Uricotelism (uric acid, least toxic, needs minimal water). Homeostasis and Osmoregulation.",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Classification chart of nitrogenous waste types and osmoregulation"
+      }
+    },
+    {
+      "node_id": "node_bio_vis_02",
+      "label": "Anatomy of the Human Kidney. Dimensions: Length 10-12 cm, Wi",
+      "node_type": "VisualEvent",
+      "subject": "biology",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "bio_vis_02"
+      ],
+      "timestamps": [
+        108.0
+      ],
+      "attributes": {
+        "visual_type": "slide_text",
+        "extracted_text": "Anatomy of the Human Kidney. Dimensions: Length 10-12 cm, Width 5-7 cm, Thickness 2-3 cm, Mass 120-170 g. Gross anatomical features: hilum notch and renal pelvis.",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Kidney dimensions and gross anatomical landmarks"
+      }
+    },
+    {
+      "node_id": "node_bio_vis_03",
+      "label": "Internal Zonation of the Kidney. Structural hierarchy from t",
+      "node_type": "VisualEvent",
+      "subject": "biology",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "bio_vis_03"
+      ],
+      "timestamps": [
+        156.0
+      ],
+      "attributes": {
+        "visual_type": "diagram",
+        "extracted_text": "Internal Zonation of the Kidney. Structural hierarchy from the whole kidney down to its functional unit: Outer Cortex, Inner Medulla, Medullary Pyramids, Columns of Bertini, and Nephron (~1 million per kidney).",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Internal zonation of renal cortex, medulla, and nephron structural hierarchy"
+      }
+    },
+    {
+      "node_id": "node_bio_seg_01",
+      "label": "Excretion is the biological process of expelling n...",
+      "node_type": "LectureSegment",
+      "subject": "biology",
+      "provenance_segment_ids": [
+        "bio_seg_01"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        5.0,
+        25.0
+      ],
+      "attributes": {
+        "speaker": "instructor_sumit",
+        "text": "Excretion is the biological process of expelling non-gaseous nitrogenous wastes such as ammonia, urea, and uric acid along with excess water, salts, and pigments out of the body."
+      }
+    },
+    {
+      "node_id": "concept_excretion",
+      "label": "Excretion",
+      "node_type": "Concept",
+      "subject": "biology",
+      "provenance_segment_ids": [
+        "bio_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_01"
+      ],
+      "timestamps": [
+        5.0
+      ],
+      "attributes": {
+        "canonical_name": "excretion"
+      }
+    },
+    {
+      "node_id": "node_bio_seg_02",
+      "label": "The primary goal of excretion in human physiology ...",
+      "node_type": "LectureSegment",
+      "subject": "biology",
+      "provenance_segment_ids": [
+        "bio_seg_02"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        28.0,
+        48.0
+      ],
+      "attributes": {
+        "speaker": "instructor_sumit",
+        "text": "The primary goal of excretion in human physiology is osmoregulation and maintaining a stable constant internal chemical composition known as homeostasis."
+      }
+    },
+    {
+      "node_id": "node_bio_seg_03",
+      "label": "Looking at the types of excretion based on nitroge...",
+      "node_type": "LectureSegment",
+      "subject": "biology",
+      "provenance_segment_ids": [
+        "bio_seg_03"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        52.0,
+        85.0
+      ],
+      "attributes": {
+        "speaker": "instructor_sumit",
+        "text": "Looking at the types of excretion based on nitrogenous waste, animals eliminate waste differently based on water availability: ammonotelism with ammonia which is highly toxic and needs the most water, ureotelism with urea which is moderately toxic, and uricotelism with uric acid which is least toxic and needs minimal water."
+      }
+    },
+    {
+      "node_id": "node_bio_seg_04",
+      "label": "Understanding Homeostasis is a prerequisite for st...",
+      "node_type": "LectureSegment",
+      "subject": "biology",
+      "provenance_segment_ids": [
+        "bio_seg_04"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        88.0,
+        105.0
+      ],
+      "attributes": {
+        "speaker": "instructor_sumit",
+        "text": "Understanding Homeostasis is a prerequisite for studying the Human Kidney and renal filtration mechanisms."
+      }
+    },
+    {
+      "node_id": "concept_understanding_homeostasis",
+      "label": "Understanding Homeostasis",
+      "node_type": "Concept",
+      "subject": "biology",
+      "provenance_segment_ids": [
+        "bio_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_01"
+      ],
+      "timestamps": [
+        88.0
+      ],
+      "attributes": {
+        "canonical_name": "understanding homeostasis"
+      }
+    },
+    {
+      "node_id": "concept_homeostasis",
+      "label": "Homeostasis",
+      "node_type": "Prerequisite",
+      "subject": "biology",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [],
+      "timestamps": [],
+      "attributes": {}
+    },
+    {
+      "node_id": "concept_human_kidney_and_renal_filtration_mechanisms",
+      "label": "Human Kidney And Renal Filtration Mechanisms",
+      "node_type": "Concept",
+      "subject": "biology",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [],
+      "timestamps": [],
+      "attributes": {}
+    },
+    {
+      "node_id": "node_bio_seg_05",
+      "label": "Examining the anatomy of the human kidney, each ad...",
+      "node_type": "LectureSegment",
+      "subject": "biology",
+      "provenance_segment_ids": [
+        "bio_seg_05"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        110.0,
+        132.0
+      ],
+      "attributes": {
+        "speaker": "instructor_sumit",
+        "text": "Examining the anatomy of the human kidney, each adult kidney is 10 to 12 centimeters long, 5 to 7 centimeters wide, 2 to 3 centimeters thick, and weighs 120 to 170 grams, situated between the thoracic and lumbar vertebra."
+      }
+    },
+    {
+      "node_id": "node_bio_seg_06",
+      "label": "The inner concave surface features a notch called ...",
+      "node_type": "LectureSegment",
+      "subject": "biology",
+      "provenance_segment_ids": [
+        "bio_seg_06"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        135.0,
+        154.0
+      ],
+      "attributes": {
+        "speaker": "instructor_sumit",
+        "text": "The inner concave surface features a notch called the hilum, leading to a broad funnel-shaped space called the renal pelvis."
+      }
+    },
+    {
+      "node_id": "concept_hilum",
+      "label": "Hilum",
+      "node_type": "Concept",
+      "subject": "biology",
+      "provenance_segment_ids": [
+        "bio_seg_06"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_02"
+      ],
+      "timestamps": [
+        135.0
+      ],
+      "attributes": {
+        "canonical_name": "hilum"
+      }
+    },
+    {
+      "node_id": "concept_renal_pelvis",
+      "label": "Renal Pelvis",
+      "node_type": "Concept",
+      "subject": "biology",
+      "provenance_segment_ids": [
+        "bio_seg_06"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_02"
+      ],
+      "timestamps": [
+        135.0
+      ],
+      "attributes": {
+        "canonical_name": "renal pelvis"
+      }
+    },
+    {
+      "node_id": "node_bio_seg_07",
+      "label": "Internally, the kidney is divided into an outer co...",
+      "node_type": "LectureSegment",
+      "subject": "biology",
+      "provenance_segment_ids": [
+        "bio_seg_07"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        158.0,
+        178.0
+      ],
+      "attributes": {
+        "speaker": "instructor_sumit",
+        "text": "Internally, the kidney is divided into an outer cortex and inner medulla, with renal cortex extending between medullary pyramids as columns of Bertini."
+      }
+    },
+    {
+      "node_id": "concept_bertini",
+      "label": "Bertini",
+      "node_type": "Concept",
+      "subject": "biology",
+      "provenance_segment_ids": [
+        "bio_seg_07"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_03"
+      ],
+      "timestamps": [
+        158.0
+      ],
+      "attributes": {
+        "canonical_name": "bertini"
+      }
+    },
+    {
+      "node_id": "node_bio_seg_08",
+      "label": "Most importantly, the functional unit of the human...",
+      "node_type": "LectureSegment",
+      "subject": "biology",
+      "provenance_segment_ids": [
+        "bio_seg_08"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        180.0,
+        198.0
+      ],
+      "attributes": {
+        "speaker": "instructor_sumit",
+        "text": "Most importantly, the functional unit of the human kidney is the nephron, with approximately one million nephrons in each adult kidney performing blood filtration."
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "node_bio_seg_01",
+      "target_id": "node_bio_vis_01",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "bio_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_01"
+      ],
+      "timestamps": [
+        5.0,
+        0.0
+      ],
+      "alignment_score": 0.5145,
+      "calibrated_confidence": 0.696,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_excretion",
+      "target_id": "node_bio_vis_01",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "bio_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_01"
+      ],
+      "timestamps": [
+        5.0
+      ],
+      "alignment_score": 0.5145,
+      "calibrated_confidence": 0.696,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_bio_seg_02",
+      "target_id": "node_bio_vis_01",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "bio_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_01"
+      ],
+      "timestamps": [
+        28.0,
+        0.0
+      ],
+      "alignment_score": 0.4975,
+      "calibrated_confidence": 0.6692,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_bio_seg_03",
+      "target_id": "node_bio_vis_01",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "bio_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_01"
+      ],
+      "timestamps": [
+        52.0,
+        0.0
+      ],
+      "alignment_score": 0.6226,
+      "calibrated_confidence": 0.8156,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_bio_seg_04",
+      "target_id": "node_bio_vis_01",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "bio_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_01"
+      ],
+      "timestamps": [
+        88.0,
+        0.0
+      ],
+      "alignment_score": 0.4781,
+      "calibrated_confidence": 0.4363,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_understanding_homeostasis",
+      "target_id": "node_bio_vis_01",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "bio_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_01"
+      ],
+      "timestamps": [
+        88.0
+      ],
+      "alignment_score": 0.4781,
+      "calibrated_confidence": 0.4363,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_homeostasis",
+      "target_id": "concept_human_kidney_and_renal_filtration_mechanisms",
+      "relation_type": "requires_prerequisite",
+      "provenance_segment_ids": [
+        "bio_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_01"
+      ],
+      "timestamps": [
+        88.0
+      ],
+      "alignment_score": 0.4781,
+      "calibrated_confidence": 0.4363,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_bio_seg_05",
+      "target_id": "node_bio_vis_02",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "bio_seg_05"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_02"
+      ],
+      "timestamps": [
+        110.0,
+        108.0
+      ],
+      "alignment_score": 0.526,
+      "calibrated_confidence": 0.4897,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_bio_seg_06",
+      "target_id": "node_bio_vis_02",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "bio_seg_06"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_02"
+      ],
+      "timestamps": [
+        135.0,
+        108.0
+      ],
+      "alignment_score": 0.5139,
+      "calibrated_confidence": 0.5188,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_hilum",
+      "target_id": "node_bio_vis_02",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "bio_seg_06"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_02"
+      ],
+      "timestamps": [
+        135.0
+      ],
+      "alignment_score": 0.5139,
+      "calibrated_confidence": 0.5188,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_renal_pelvis",
+      "target_id": "node_bio_vis_02",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "bio_seg_06"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_02"
+      ],
+      "timestamps": [
+        135.0
+      ],
+      "alignment_score": 0.5139,
+      "calibrated_confidence": 0.5188,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_bio_seg_07",
+      "target_id": "node_bio_vis_03",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "bio_seg_07"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_03"
+      ],
+      "timestamps": [
+        158.0,
+        156.0
+      ],
+      "alignment_score": 0.5834,
+      "calibrated_confidence": 0.5905,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_bertini",
+      "target_id": "node_bio_vis_03",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "bio_seg_07"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_03"
+      ],
+      "timestamps": [
+        158.0
+      ],
+      "alignment_score": 0.5834,
+      "calibrated_confidence": 0.5905,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_bio_seg_08",
+      "target_id": "node_bio_vis_03",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "bio_seg_08"
+      ],
+      "provenance_visual_ids": [
+        "bio_vis_03"
+      ],
+      "timestamps": [
+        180.0,
+        156.0
+      ],
+      "alignment_score": 0.5259,
+      "calibrated_confidence": 0.5439,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    }
+  ],
+  "validation_summary": {
+    "initial_node_count": 18,
+    "initial_edge_count": 14,
+    "schema_violations": 0,
+    "broken_timestamps": 0,
+    "missing_provenance": 0,
+    "cycles_detected": 0,
+    "duplicates_merged": 0,
+    "accepted_edges": 14,
+    "unresolved_edges": 0,
+    "rejected_edges": 0,
+    "issues": [],
+    "final_node_count": 18,
+    "final_edge_count": 14,
+    "remaining_violations": 0
+  }
+}

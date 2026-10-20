@@ -1,0 +1,420 @@
+{
+  "lectures": [
+    {
+      "lecture_id": "math_calculus_01",
+      "inferred_subject": "mathematics",
+      "alignment_metrics": {
+        "method": "proposed_sequence_optimized_selective",
+        "tp": 6,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "coverage": 1.0,
+        "false_match_rate": 0.0,
+        "total_gold_pairs": 6,
+        "accepted_matches": 6,
+        "runtime_seconds": 0.0125
+      },
+      "graph_metrics": {
+        "node_precision": 0.25,
+        "node_recall": 1.0,
+        "node_f1": 0.4,
+        "edge_precision": 0.0,
+        "edge_recall": 0.0,
+        "edge_f1": 0.0,
+        "evidence_attribution_accuracy": 1.0,
+        "unsupported_relation_rate": 0.0,
+        "duplicate_entities_merged": 0,
+        "dag_cycles_detected": 0,
+        "schema_violations": 0,
+        "total_nodes": 18,
+        "total_edges": 15,
+        "accepted_edges": 7
+      },
+      "confidence_stats": {
+        "total_candidates": 6,
+        "accepted": 6,
+        "review": 0,
+        "rejected": 0,
+        "coverage": 1.0,
+        "rejection_rate": 0.0,
+        "review_rate": 0.0
+      },
+      "validation_report": {
+        "initial_node_count": 18,
+        "initial_edge_count": 15,
+        "schema_violations": 0,
+        "broken_timestamps": 0,
+        "missing_provenance": 0,
+        "cycles_detected": 0,
+        "duplicates_merged": 0,
+        "accepted_edges": 7,
+        "unresolved_edges": 8,
+        "rejected_edges": 0,
+        "issues": [
+          "Low alignment score (0.367 < 0.40).",
+          "Low alignment score (0.367 < 0.40).",
+          "Low alignment score (0.367 < 0.40).",
+          "Low alignment score (0.367 < 0.40).",
+          "Low alignment score (0.374 < 0.40).",
+          "Low alignment score (0.396 < 0.40).",
+          "Low alignment score (0.396 < 0.40).",
+          "Low alignment score (0.396 < 0.40)."
+        ],
+        "final_node_count": 18,
+        "final_edge_count": 15
+      }
+    },
+    {
+      "lecture_id": "cs_programming_01",
+      "inferred_subject": "mathematics",
+      "alignment_metrics": {
+        "method": "proposed_sequence_optimized_selective",
+        "tp": 5,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "coverage": 1.0,
+        "false_match_rate": 0.0,
+        "total_gold_pairs": 5,
+        "accepted_matches": 5,
+        "runtime_seconds": 0.0104
+      },
+      "graph_metrics": {
+        "node_precision": 0.2222,
+        "node_recall": 1.0,
+        "node_f1": 0.3636,
+        "edge_precision": 0.0,
+        "edge_recall": 0.0,
+        "edge_f1": 0.0,
+        "evidence_attribution_accuracy": 1.0,
+        "unsupported_relation_rate": 0.0,
+        "duplicate_entities_merged": 0,
+        "dag_cycles_detected": 0,
+        "schema_violations": 0,
+        "total_nodes": 17,
+        "total_edges": 14,
+        "accepted_edges": 6
+      },
+      "confidence_stats": {
+        "total_candidates": 5,
+        "accepted": 5,
+        "review": 0,
+        "rejected": 0,
+        "coverage": 1.0,
+        "rejection_rate": 0.0,
+        "review_rate": 0.0
+      },
+      "validation_report": {
+        "initial_node_count": 17,
+        "initial_edge_count": 14,
+        "schema_violations": 0,
+        "broken_timestamps": 0,
+        "missing_provenance": 0,
+        "cycles_detected": 0,
+        "duplicates_merged": 0,
+        "accepted_edges": 6,
+        "unresolved_edges": 8,
+        "rejected_edges": 0,
+        "issues": [
+          "Low alignment score (0.371 < 0.40).",
+          "Low alignment score (0.371 < 0.40).",
+          "Low alignment score (0.371 < 0.40).",
+          "Low alignment score (0.371 < 0.40).",
+          "Low alignment score (0.371 < 0.40).",
+          "Low alignment score (0.371 < 0.40).",
+          "Low alignment score (0.371 < 0.40).",
+          "Low alignment score (0.371 < 0.40)."
+        ],
+        "final_node_count": 17,
+        "final_edge_count": 14
+      }
+    },
+    {
+      "lecture_id": "physics_rlc_01",
+      "inferred_subject": "physics_electronics",
+      "alignment_metrics": {
+        "method": "proposed_sequence_optimized_selective",
+        "tp": 4,
+        "fp": 0,
+        "fn": 1,
+        "precision": 1.0,
+        "recall": 0.8,
+        "f1": 0.8889,
+        "coverage": 0.8,
+        "false_match_rate": 0.0,
+        "total_gold_pairs": 5,
+        "accepted_matches": 4,
+        "runtime_seconds": 0.0088
+      },
+      "graph_metrics": {
+        "node_precision": 0.1429,
+        "node_recall": 0.5,
+        "node_f1": 0.2222,
+        "edge_precision": 0.0,
+        "edge_recall": 0.0,
+        "edge_f1": 0.0,
+        "evidence_attribution_accuracy": 1.0,
+        "unsupported_relation_rate": 0.0,
+        "duplicate_entities_merged": 0,
+        "dag_cycles_detected": 0,
+        "schema_violations": 0,
+        "total_nodes": 15,
+        "total_edges": 12,
+        "accepted_edges": 11
+      },
+      "confidence_stats": {
+        "total_candidates": 5,
+        "accepted": 4,
+        "review": 1,
+        "rejected": 0,
+        "coverage": 0.8,
+        "rejection_rate": 0.0,
+        "review_rate": 0.2
+      },
+      "validation_report": {
+        "initial_node_count": 15,
+        "initial_edge_count": 12,
+        "schema_violations": 0,
+        "broken_timestamps": 0,
+        "missing_provenance": 0,
+        "cycles_detected": 0,
+        "duplicates_merged": 0,
+        "accepted_edges": 11,
+        "unresolved_edges": 1,
+        "rejected_edges": 0,
+        "issues": [
+          "Low alignment score (0.400 < 0.40)."
+        ],
+        "final_node_count": 15,
+        "final_edge_count": 12
+      }
+    },
+    {
+      "lecture_id": "cs_systems_01",
+      "inferred_subject": "general_cs",
+      "alignment_metrics": {
+        "method": "proposed_sequence_optimized_selective",
+        "tp": 5,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "coverage": 1.0,
+        "false_match_rate": 0.0,
+        "total_gold_pairs": 5,
+        "accepted_matches": 5,
+        "runtime_seconds": 0.0122
+      },
+      "graph_metrics": {
+        "node_precision": 0.2,
+        "node_recall": 1.0,
+        "node_f1": 0.3333,
+        "edge_precision": 0.5,
+        "edge_recall": 1.0,
+        "edge_f1": 0.6667,
+        "evidence_attribution_accuracy": 1.0,
+        "unsupported_relation_rate": 0.0,
+        "duplicate_entities_merged": 0,
+        "dag_cycles_detected": 0,
+        "schema_violations": 0,
+        "total_nodes": 19,
+        "total_edges": 17,
+        "accepted_edges": 17
+      },
+      "confidence_stats": {
+        "total_candidates": 5,
+        "accepted": 5,
+        "review": 0,
+        "rejected": 0,
+        "coverage": 1.0,
+        "rejection_rate": 0.0,
+        "review_rate": 0.0
+      },
+      "validation_report": {
+        "initial_node_count": 19,
+        "initial_edge_count": 17,
+        "schema_violations": 0,
+        "broken_timestamps": 0,
+        "missing_provenance": 0,
+        "cycles_detected": 0,
+        "duplicates_merged": 0,
+        "accepted_edges": 17,
+        "unresolved_edges": 0,
+        "rejected_edges": 0,
+        "issues": [],
+        "final_node_count": 19,
+        "final_edge_count": 17
+      }
+    },
+    {
+      "lecture_id": "math_noisy_edge_cases",
+      "inferred_subject": "mathematics",
+      "alignment_metrics": {
+        "method": "proposed_sequence_optimized_selective",
+        "tp": 5,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "coverage": 1.0,
+        "false_match_rate": 0.0,
+        "total_gold_pairs": 5,
+        "accepted_matches": 5,
+        "runtime_seconds": 0.0076
+      },
+      "graph_metrics": {
+        "node_precision": 0.0,
+        "node_recall": 0.0,
+        "node_f1": 0.0,
+        "edge_precision": 0.0,
+        "edge_recall": 0.0,
+        "edge_f1": 0.0,
+        "evidence_attribution_accuracy": 1.0,
+        "unsupported_relation_rate": 0.0,
+        "duplicate_entities_merged": 0,
+        "dag_cycles_detected": 0,
+        "schema_violations": 1,
+        "total_nodes": 15,
+        "total_edges": 11,
+        "accepted_edges": 7
+      },
+      "confidence_stats": {
+        "total_candidates": 5,
+        "accepted": 5,
+        "review": 0,
+        "rejected": 0,
+        "coverage": 1.0,
+        "rejection_rate": 0.0,
+        "review_rate": 0.0
+      },
+      "validation_report": {
+        "initial_node_count": 15,
+        "initial_edge_count": 11,
+        "schema_violations": 1,
+        "broken_timestamps": 0,
+        "missing_provenance": 0,
+        "cycles_detected": 0,
+        "duplicates_merged": 0,
+        "accepted_edges": 7,
+        "unresolved_edges": 4,
+        "rejected_edges": 0,
+        "issues": [
+          "Node 'node_edge_vis_04_contradiction' type 'ArchitectureComponent' not in allowed schema for subject 'mathematics'. Allowed: ['Concept', 'Definition', 'DerivationStep', 'Formula', 'LectureSegment', 'Lemma', 'Prerequisite', 'Result', 'Theorem', 'UnknownEntity', 'VisualEvent', 'WorkedExample']",
+          "Low alignment score (0.385 < 0.40).",
+          "Low alignment score (0.385 < 0.40).",
+          "Low alignment score (0.369 < 0.40).",
+          "Low alignment score (0.369 < 0.40)."
+        ],
+        "final_node_count": 15,
+        "final_edge_count": 11
+      }
+    },
+    {
+      "lecture_id": "humanities_philosophy_01",
+      "inferred_subject": "physics_electronics",
+      "alignment_metrics": {
+        "method": "proposed_sequence_optimized_selective",
+        "tp": 3,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "coverage": 1.0,
+        "false_match_rate": 0.0,
+        "total_gold_pairs": 3,
+        "accepted_matches": 3,
+        "runtime_seconds": 0.0046
+      },
+      "graph_metrics": {
+        "node_precision": 0.0,
+        "node_recall": 0.0,
+        "node_f1": 0.0,
+        "edge_precision": 0.0,
+        "edge_recall": 0.0,
+        "edge_f1": 0.0,
+        "evidence_attribution_accuracy": 1.0,
+        "unsupported_relation_rate": 0.0,
+        "duplicate_entities_merged": 0,
+        "dag_cycles_detected": 0,
+        "schema_violations": 0,
+        "total_nodes": 10,
+        "total_edges": 7,
+        "accepted_edges": 7
+      },
+      "confidence_stats": {
+        "total_candidates": 3,
+        "accepted": 3,
+        "review": 0,
+        "rejected": 0,
+        "coverage": 1.0,
+        "rejection_rate": 0.0,
+        "review_rate": 0.0
+      },
+      "validation_report": {
+        "initial_node_count": 10,
+        "initial_edge_count": 7,
+        "schema_violations": 0,
+        "broken_timestamps": 0,
+        "missing_provenance": 0,
+        "cycles_detected": 0,
+        "duplicates_merged": 0,
+        "accepted_edges": 7,
+        "unresolved_edges": 0,
+        "rejected_edges": 0,
+        "issues": [],
+        "final_node_count": 10,
+        "final_edge_count": 7
+      }
+    }
+  ],
+  "subject_classification_metrics": {
+    "accuracy": 0.6667,
+    "macro_f1": 0.4933,
+    "confusion_matrix": {
+      "general_cs": {
+        "general_cs": 1,
+        "mathematics": 0,
+        "physics_electronics": 0,
+        "programming": 0,
+        "unknown": 0
+      },
+      "mathematics": {
+        "general_cs": 0,
+        "mathematics": 2,
+        "physics_electronics": 0,
+        "programming": 0,
+        "unknown": 0
+      },
+      "physics_electronics": {
+        "general_cs": 0,
+        "mathematics": 0,
+        "physics_electronics": 1,
+        "programming": 0,
+        "unknown": 0
+      },
+      "programming": {
+        "general_cs": 0,
+        "mathematics": 1,
+        "physics_electronics": 0,
+        "programming": 0,
+        "unknown": 0
+      },
+      "unknown": {
+        "general_cs": 0,
+        "mathematics": 0,
+        "physics_electronics": 1,
+        "programming": 0,
+        "unknown": 0
+      }
+    },
+    "total_samples": 6
+  }
+}

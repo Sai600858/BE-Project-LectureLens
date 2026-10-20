@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SALKG Knowledge Graph - cs_systems_01</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background: #0f172a; color: #f8fafc; }
+    #header { padding: 16px 24px; background: #1e293b; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+    #container { display: flex; height: calc(100vh - 72px); }
+    #graph-pane { flex: 1; overflow: auto; position: relative; background: #0f172a; }
+    #info-pane { width: 380px; background: #1e293b; border-left: 1px solid #334155; padding: 20px; overflow-y: auto; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+    .status-accepted { background: #065f46; color: #34d399; }
+    .status-unresolved { background: #854d0e; color: #facc15; }
+    .status-rejected { background: #991b1b; color: #f87171; }
+    .card { background: #0f172a; border-radius: 8px; padding: 14px; margin-bottom: 16px; border: 1px solid #334155; }
+    svg { width: 100%; height: 100%; min-width: 800px; min-height: 600px; }
+    circle, rect { cursor: pointer; transition: all 0.2s; }
+    circle:hover, rect:hover { stroke: #38bdf8; stroke-width: 3px; }
+    line { stroke: #475569; stroke-width: 1.5; }
+    text { fill: #e2e8f0; font-size: 11px; user-select: none; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <div>
+      <h2 style="margin:0 0 4px 0;">SALKG Knowledge Graph: cs_systems_01</h2>
+      <div style="font-size:13px; color:#94a3b8;">Subject: <strong>General Cs</strong> | Nodes: 19 | Edges: 17</div>
+    </div>
+  </div>
+  <div id="container">
+    <div id="graph-pane">
+      <svg id="svg-graph"></svg>
+    </div>
+    <div id="info-pane">
+      <h3 style="margin-top:0;">Provenance Inspector</h3>
+      <div id="details">Click on any node or edge to inspect its multimodal evidence provenance, timestamps, and validation status.</div>
+    </div>
+  </div>
+
+  <script>
+    const nodes = [{"id": "node_os_vis_01", "label": "Operating Systems: Virtual Memory and Address Translation", "type": "VisualEvent", "color": "#3F51B5", "provenance_seg": [], "provenance_vis": ["os_vis_01"], "timestamps": [5.0]}, {"id": "node_os_vis_02", "label": "Prerequisites: Physical Memory, RAM Hardware, CPU Registers,", "type": "VisualEvent", "color": "#3F51B5", "provenance_seg": [], "provenance_vis": ["os_vis_02"], "timestamps": [39.0]}, {"id": "node_os_vis_03", "label": "Virtual Address Translation Architecture: CPU -> MMU -> TLB ", "type": "ArchitectureComponent", "color": "#999999", "provenance_seg": [], "provenance_vis": ["os_vis_03"], "timestamps": [79.0]}, {"id": "node_os_vis_04", "label": "Page Table Lookup and Page Fault Handler Routine Flowchart", "type": "ArchitectureComponent", "color": "#999999", "provenance_seg": [], "provenance_vis": ["os_vis_04"], "timestamps": [159.0]}, {"id": "node_os_seg_01", "label": "In this operating systems lecture, we investigate ...", "type": "LectureSegment", "color": "#607D8B", "provenance_seg": ["os_seg_01"], "provenance_vis": [], "timestamps": [6.0, 35.0]}, {"id": "concept_virtual_memory", "label": "Virtual Memory", "type": "Concept", "color": "#4CAF50", "provenance_seg": ["os_seg_01", "os_seg_02"], "provenance_vis": ["os_vis_01", "os_vis_02"], "timestamps": [6.0, 40.0]}, {"id": "node_os_seg_02", "label": "Before learning Virtual Memory, one must understan...", "type": "LectureSegment", "color": "#607D8B", "provenance_seg": ["os_seg_02"], "provenance_vis": [], "timestamps": [40.0, 75.0]}, {"id": "concept_before", "label": "Before", "type": "Concept", "color": "#4CAF50", "provenance_seg": ["os_seg_02"], "provenance_vis": ["os_vis_02"], "timestamps": [40.0]}, {"id": "concept_physical_memory", "label": "Physical Memory", "type": "Concept", "color": "#4CAF50", "provenance_seg": ["os_seg_02"], "provenance_vis": ["os_vis_02"], "timestamps": [40.0]}, {"id": "concept_cpu_addressing_basics", "label": "Cpu Addressing Basics", "type": "Prerequisite", "color": "#795548", "provenance_seg": [], "provenance_vis": [], "timestamps": []}, {"id": "node_os_seg_03", "label": "Examining this architecture diagram shows the Tran...", "type": "LectureSegment", "color": "#607D8B", "provenance_seg": ["os_seg_03"], "provenance_vis": [], "timestamps": [80.0, 155.0]}, {"id": "concept_examining", "label": "Examining", "type": "Concept", "color": "#4CAF50", "provenance_seg": ["os_seg_03"], "provenance_vis": ["os_vis_03"], "timestamps": [80.0]}, {"id": "concept_translation_lookaside_buffer", "label": "Translation Lookaside Buffer", "type": "Concept", "color": "#4CAF50", "provenance_seg": ["os_seg_03"], "provenance_vis": ["os_vis_03"], "timestamps": [80.0]}, {"id": "concept_when", "label": "When", "type": "Concept", "color": "#4CAF50", "provenance_seg": ["os_seg_03"], "provenance_vis": ["os_vis_03"], "timestamps": [80.0]}, {"id": "node_os_seg_04", "label": "If a TLB miss occurs, the Memory Management Unit w...", "type": "LectureSegment", "color": "#607D8B", "provenance_seg": ["os_seg_04"], "provenance_vis": [], "timestamps": [160.0, 230.0]}, {"id": "concept_memory_management_unit", "label": "Memory Management Unit", "type": "Concept", "color": "#4CAF50", "provenance_seg": ["os_seg_04"], "provenance_vis": ["os_vis_04"], "timestamps": [160.0]}, {"id": "concept_page_table", "label": "Page Table", "type": "Concept", "color": "#4CAF50", "provenance_seg": ["os_seg_04"], "provenance_vis": ["os_vis_04"], "timestamps": [160.0]}, {"id": "node_os_seg_05", "label": "If the valid bit is zero, a Page Fault exception o...", "type": "LectureSegment", "color": "#607D8B", "provenance_seg": ["os_seg_05"], "provenance_vis": [], "timestamps": [235.0, 310.0]}, {"id": "concept_page_fault", "label": "Page Fault", "type": "Concept", "color": "#4CAF50", "provenance_seg": ["os_seg_05"], "provenance_vis": ["os_vis_04"], "timestamps": [235.0]}];
+    const edges = [{"source": "node_os_seg_01", "target": "node_os_vis_01", "relation": "corresponds_to", "confidence": 0.6146, "status": "accepted", "provenance_seg": ["os_seg_01"], "provenance_vis": ["os_vis_01"]}, {"source": "concept_virtual_memory", "target": "node_os_vis_01", "relation": "explains", "confidence": 0.6146, "status": "accepted", "provenance_seg": ["os_seg_01"], "provenance_vis": ["os_vis_01"]}, {"source": "node_os_seg_02", "target": "node_os_vis_02", "relation": "corresponds_to", "confidence": 0.3586, "status": "accepted", "provenance_seg": ["os_seg_02"], "provenance_vis": ["os_vis_02"]}, {"source": "concept_before", "target": "node_os_vis_02", "relation": "explains", "confidence": 0.3586, "status": "accepted", "provenance_seg": ["os_seg_02"], "provenance_vis": ["os_vis_02"]}, {"source": "concept_virtual_memory", "target": "node_os_vis_02", "relation": "explains", "confidence": 0.3586, "status": "accepted", "provenance_seg": ["os_seg_02"], "provenance_vis": ["os_vis_02"]}, {"source": "concept_physical_memory", "target": "node_os_vis_02", "relation": "explains", "confidence": 0.3586, "status": "accepted", "provenance_seg": ["os_seg_02"], "provenance_vis": ["os_vis_02"]}, {"source": "concept_physical_memory", "target": "concept_virtual_memory", "relation": "requires_prerequisite", "confidence": 0.3586, "status": "accepted", "provenance_seg": ["os_seg_02"], "provenance_vis": ["os_vis_02"]}, {"source": "concept_cpu_addressing_basics", "target": "concept_virtual_memory", "relation": "requires_prerequisite", "confidence": 0.3586, "status": "accepted", "provenance_seg": ["os_seg_02"], "provenance_vis": ["os_vis_02"]}, {"source": "node_os_seg_03", "target": "node_os_vis_03", "relation": "corresponds_to", "confidence": 0.5431, "status": "accepted", "provenance_seg": ["os_seg_03"], "provenance_vis": ["os_vis_03"]}, {"source": "concept_examining", "target": "node_os_vis_03", "relation": "explains", "confidence": 0.5431, "status": "accepted", "provenance_seg": ["os_seg_03"], "provenance_vis": ["os_vis_03"]}, {"source": "concept_translation_lookaside_buffer", "target": "node_os_vis_03", "relation": "explains", "confidence": 0.5431, "status": "accepted", "provenance_seg": ["os_seg_03"], "provenance_vis": ["os_vis_03"]}, {"source": "concept_when", "target": "node_os_vis_03", "relation": "explains", "confidence": 0.5431, "status": "accepted", "provenance_seg": ["os_seg_03"], "provenance_vis": ["os_vis_03"]}, {"source": "node_os_seg_04", "target": "node_os_vis_04", "relation": "corresponds_to", "confidence": 0.4562, "status": "accepted", "provenance_seg": ["os_seg_04"], "provenance_vis": ["os_vis_04"]}, {"source": "concept_memory_management_unit", "target": "node_os_vis_04", "relation": "explains", "confidence": 0.4562, "status": "accepted", "provenance_seg": ["os_seg_04"], "provenance_vis": ["os_vis_04"]}, {"source": "concept_page_table", "target": "node_os_vis_04", "relation": "explains", "confidence": 0.4562, "status": "accepted", "provenance_seg": ["os_seg_04"], "provenance_vis": ["os_vis_04"]}, {"source": "node_os_seg_05", "target": "node_os_vis_04", "relation": "corresponds_to", "confidence": 0.5696, "status": "accepted", "provenance_seg": ["os_seg_05"], "provenance_vis": ["os_vis_04"]}, {"source": "concept_page_fault", "target": "node_os_vis_04", "relation": "explains", "confidence": 0.5696, "status": "accepted", "provenance_seg": ["os_seg_05"], "provenance_vis": ["os_vis_04"]}];
+    const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]));
+
+    const svg = document.getElementById('svg-graph');
+    const width = 1200;
+    const height = 900;
+    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+    // Simple deterministic radial/force-inspired layout
+    const N = nodes.length;
+    const radius = Math.min(width, height) * 0.40;
+    const cx = width / 2;
+    const cy = height / 2;
+
+    nodes.forEach((n, i) => {
+      const angle = (2 * Math.PI * i) / N;
+      n.x = cx + radius * Math.cos(angle) + (i % 2 === 0 ? 30 : -30);
+      n.y = cy + radius * Math.sin(angle) + (i % 3 === 0 ? 25 : -25);
+    });
+
+    // Render Edges
+    edges.forEach(e => {
+      const s = nodeMap[e.source];
+      const t = nodeMap[e.target];
+      if (!s || !t) return;
+
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', s.x);
+      line.setAttribute('y1', s.y);
+      line.setAttribute('x2', t.x);
+      line.setAttribute('y2', t.y);
+      line.setAttribute('stroke', e.status === 'accepted' ? '#38bdf8' : '#f87171');
+      if (e.status !== 'accepted') line.setAttribute('stroke-dasharray', '4,4');
+      line.style.cursor = 'pointer';
+
+      line.onclick = () => {
+        document.getElementById('details').innerHTML = `
+          <div class="card">
+            <h4>Relationship: ${e.relation}</h4>
+            <p><strong>From:</strong> ${s.label}</p>
+            <p><strong>To:</strong> ${t.label}</p>
+            <p><strong>Status:</strong> <span class="badge status-${e.status}">${e.status}</span></p>
+            <p><strong>Confidence:</strong> ${e.confidence.toFixed(3)}</p>
+            <p><strong>Provenance Segments:</strong> ${e.provenance_seg.join(', ') || 'None'}</p>
+            <p><strong>Provenance Visuals:</strong> ${e.provenance_vis.join(', ') || 'None'}</p>
+          </div>
+        `;
+      };
+      svg.appendChild(line);
+    });
+
+    // Render Nodes
+    nodes.forEach(n => {
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+
+      const label = n.label.length > 22 ? n.label.substring(0, 20) + '...' : n.label;
+      text.textContent = label;
+      text.setAttribute('x', n.x);
+      text.setAttribute('y', n.y + 4);
+      text.setAttribute('text-anchor', 'middle');
+
+      const boxW = Math.max(100, label.length * 7 + 16);
+      const boxH = 26;
+      rect.setAttribute('x', n.x - boxW/2);
+      rect.setAttribute('y', n.y - boxH/2);
+      rect.setAttribute('width', boxW);
+      rect.setAttribute('height', boxH);
+      rect.setAttribute('rx', 6);
+      rect.setAttribute('fill', n.color);
+
+      g.appendChild(rect);
+      g.appendChild(text);
+
+      g.onclick = () => {
+        document.getElementById('details').innerHTML = `
+          <div class="card">
+            <h4>${n.label}</h4>
+            <p><strong>Type:</strong> ${n.type}</p>
+            <p><strong>Node ID:</strong> <code>${n.id}</code></p>
+            <p><strong>Timestamps:</strong> ${n.timestamps.map(t => t.toFixed(1) + 's').join(', ') || 'N/A'}</p>
+            <p><strong>Speech Evidence:</strong> ${n.provenance_seg.join(', ') || 'None'}</p>
+            <p><strong>Visual Evidence:</strong> ${n.provenance_vis.join(', ') || 'None'}</p>
+          </div>
+        `;
+      };
+      svg.appendChild(g);
+    });
+  </script>
+</body>
+</html>

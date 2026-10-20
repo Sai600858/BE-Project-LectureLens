@@ -1,0 +1,34 @@
+digraph "physics_rlc_01" {
+  rankdir="LR";
+  node [shape=box, style="filled,rounded", fontname="Helvetica"];
+  edge [fontname="Helvetica", fontsize=10];
+
+  "node_ee_vis_01" [label="Circuit Theory: Series RLC Circuit \n(VisualEvent)", fillcolor="#3F51B5"];
+  "node_ee_vis_02" [label="Prerequisites: Kirchhoff's Voltage \n(VisualEvent)", fillcolor="#3F51B5"];
+  "node_ee_vis_03" [label="Series RLC Circuit Diagram with AC \n(VisualEvent)", fillcolor="#3F51B5"];
+  "node_ee_vis_04" [label="Resonance Frequency Formula: \omega\n(Formula)", fillcolor="#9C27B0"];
+  "node_ee_seg_01" [label="Today in electric circuits we exami\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_series" [label="Series\n(Concept)", fillcolor="#4CAF50"];
+  "concept_circuit" [label="Circuit\n(Concept)", fillcolor="#4CAF50"];
+  "node_ee_seg_02" [label="Before studying the RLC circuit, on\n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_before" [label="Before\n(Concept)", fillcolor="#4CAF50"];
+  "concept_kirchhoff" [label="Kirchhoff\n(Concept)", fillcolor="#4CAF50"];
+  "concept_voltage_law" [label="Voltage Law\n(Concept)", fillcolor="#4CAF50"];
+  "concept_rlc_circuit" [label="Rlc Circuit\n(Concept)", fillcolor="#4CAF50"];
+  "node_ee_seg_04" [label="From this differential equation we \n(LectureSegment)", fillcolor="#607D8B"];
+  "concept_from" [label="From\n(Concept)", fillcolor="#4CAF50"];
+  "node_ee_seg_05" [label="At this resonance frequency, the in\n(LectureSegment)", fillcolor="#607D8B"];
+
+  "node_ee_seg_01" -> "node_ee_vis_01" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_series" -> "node_ee_vis_01" [label="explains", style="solid", color="#333333"];
+  "concept_circuit" -> "node_ee_vis_01" [label="explains", style="solid", color="#333333"];
+  "node_ee_seg_02" -> "node_ee_vis_02" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_before" -> "node_ee_vis_02" [label="explains", style="solid", color="#333333"];
+  "concept_kirchhoff" -> "node_ee_vis_02" [label="explains", style="solid", color="#333333"];
+  "concept_voltage_law" -> "node_ee_vis_02" [label="explains", style="solid", color="#333333"];
+  "concept_kirchhoff" -> "concept_rlc_circuit" [label="requires_prerequisite", style="solid", color="#333333"];
+  "node_ee_seg_04" -> "node_ee_vis_04" [label="corresponds_to", style="solid", color="#333333"];
+  "concept_from" -> "node_ee_vis_04" [label="explains", style="solid", color="#333333"];
+  "node_ee_vis_04" -> "concept_from" [label="derives", style="solid", color="#333333"];
+  "node_ee_seg_05" -> "node_ee_vis_04" [label="corresponds_to", style="dashed", color="#D32F2F"];
+}

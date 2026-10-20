@@ -1,0 +1,625 @@
+{
+  "lecture_id": "cs_programming_01",
+  "subject": "mathematics",
+  "nodes": [
+    {
+      "node_id": "node_prog_vis_01",
+      "label": "Algorithm Analysis: Binary Search Overview",
+      "node_type": "VisualEvent",
+      "subject": "mathematics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "prog_vis_01"
+      ],
+      "timestamps": [
+        8.0
+      ],
+      "attributes": {
+        "visual_type": "slide_text",
+        "extracted_text": "Algorithm Analysis: Binary Search Overview",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Introductory slide on binary search"
+      }
+    },
+    {
+      "node_id": "node_prog_vis_02",
+      "label": "Prerequisites: Sorted Arrays, Random Access, Array Indices",
+      "node_type": "VisualEvent",
+      "subject": "mathematics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "prog_vis_02"
+      ],
+      "timestamps": [
+        43.0
+      ],
+      "attributes": {
+        "visual_type": "slide_text",
+        "extracted_text": "Prerequisites: Sorted Arrays, Random Access, Array Indices",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Prerequisite data structures"
+      }
+    },
+    {
+      "node_id": "node_prog_vis_03",
+      "label": "def binary_search(arr, target):\n    low, high = 0, len(arr) ",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "prog_vis_03"
+      ],
+      "timestamps": [
+        83.0
+      ],
+      "attributes": {
+        "visual_type": "code_snippet",
+        "extracted_text": "def binary_search(arr, target):\n    low, high = 0, len(arr) - 1\n    while low <= high:\n        mid = (low + high) // 2\n        if arr[mid] == target: return mid\n        elif arr[mid] < target: low = mid + 1\n        else: high = mid - 1\n    return -1",
+        "formula_latex": null,
+        "code_content": "def binary_search(arr, target):\n    low, high = 0, len(arr) - 1\n    while low <= high:\n        mid = (low + high) // 2\n        if arr[mid] == target: return mid\n        elif arr[mid] < target: low = mid + 1\n        else: high = mid - 1\n    return -1",
+        "description": "Python code block for iterative binary search"
+      }
+    },
+    {
+      "node_id": "node_prog_vis_04",
+      "label": "Complexity Analysis: Best Case O(1), Worst Case O(log n), Sp",
+      "node_type": "VisualEvent",
+      "subject": "mathematics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "prog_vis_04"
+      ],
+      "timestamps": [
+        226.0
+      ],
+      "attributes": {
+        "visual_type": "slide_text",
+        "extracted_text": "Complexity Analysis: Best Case O(1), Worst Case O(log n), Space O(1)",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Big-O runtime and space complexity table"
+      }
+    },
+    {
+      "node_id": "node_prog_seg_01",
+      "label": "Today we will analyze Binary Search, an efficient ...",
+      "node_type": "LectureSegment",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "prog_seg_01"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        10.0,
+        40.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_cs",
+        "text": "Today we will analyze Binary Search, an efficient algorithm for finding target keys in logarithmic time."
+      }
+    },
+    {
+      "node_id": "concept_for_finding_target_keys_in_loga",
+      "label": "For Finding Target Keys In Loga",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "prog_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_01"
+      ],
+      "timestamps": [
+        10.0
+      ],
+      "attributes": {
+        "canonical_name": "for finding target keys in loga"
+      }
+    },
+    {
+      "node_id": "node_prog_seg_02",
+      "label": "Before learning Binary Search, one must understand...",
+      "node_type": "LectureSegment",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "prog_seg_02"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        45.0,
+        80.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_cs",
+        "text": "Before learning Binary Search, one must understand Sorted Arrays and array indexing fundamentals."
+      }
+    },
+    {
+      "node_id": "concept_before",
+      "label": "Before",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "prog_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_02"
+      ],
+      "timestamps": [
+        45.0
+      ],
+      "attributes": {
+        "canonical_name": "before"
+      }
+    },
+    {
+      "node_id": "concept_binary_search",
+      "label": "Binary Search",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "prog_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_02"
+      ],
+      "timestamps": [
+        45.0
+      ],
+      "attributes": {
+        "canonical_name": "binary search"
+      }
+    },
+    {
+      "node_id": "concept_sorted_arrays",
+      "label": "Sorted Arrays",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "prog_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_02"
+      ],
+      "timestamps": [
+        45.0
+      ],
+      "attributes": {
+        "canonical_name": "sorted arrays"
+      }
+    },
+    {
+      "node_id": "concept_array_indexing_fundamentals",
+      "label": "Array Indexing Fundamentals",
+      "node_type": "Prerequisite",
+      "subject": "mathematics",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [],
+      "timestamps": [],
+      "attributes": {}
+    },
+    {
+      "node_id": "node_prog_seg_03",
+      "label": "Look at the code implementation on the slide. The ...",
+      "node_type": "LectureSegment",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "prog_seg_03"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        85.0,
+        150.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_cs",
+        "text": "Look at the code implementation on the slide. The function binary_search takes arr and target. While low is less than or equal to high, we compute mid."
+      }
+    },
+    {
+      "node_id": "concept_look",
+      "label": "Look",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "prog_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_03"
+      ],
+      "timestamps": [
+        85.0
+      ],
+      "attributes": {
+        "canonical_name": "look"
+      }
+    },
+    {
+      "node_id": "concept_while",
+      "label": "While",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "prog_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_03"
+      ],
+      "timestamps": [
+        85.0
+      ],
+      "attributes": {
+        "canonical_name": "while"
+      }
+    },
+    {
+      "node_id": "node_prog_seg_04",
+      "label": "If arr of mid equals target, return mid. If target...",
+      "node_type": "LectureSegment",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "prog_seg_04"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        155.0,
+        220.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_cs",
+        "text": "If arr of mid equals target, return mid. If target is less than arr of mid, update high to mid minus 1."
+      }
+    },
+    {
+      "node_id": "node_prog_seg_05",
+      "label": "Now let us analyze the time complexity. Because th...",
+      "node_type": "LectureSegment",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "prog_seg_05"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        230.0,
+        320.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_cs",
+        "text": "Now let us analyze the time complexity. Because the search space halves at every step, the worst-case runtime complexity is Big-O of log n."
+      }
+    },
+    {
+      "node_id": "concept_because",
+      "label": "Because",
+      "node_type": "Concept",
+      "subject": "mathematics",
+      "provenance_segment_ids": [
+        "prog_seg_05"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_04"
+      ],
+      "timestamps": [
+        230.0
+      ],
+      "attributes": {
+        "canonical_name": "because"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "node_prog_seg_01",
+      "target_id": "node_prog_vis_01",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "prog_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_01"
+      ],
+      "timestamps": [
+        10.0,
+        8.0
+      ],
+      "alignment_score": 0.3706,
+      "calibrated_confidence": 0.3636,
+      "validation_status": "unresolved",
+      "is_explicit": true,
+      "validation_issues": [
+        "Low alignment score (0.371 < 0.40)."
+      ]
+    },
+    {
+      "source_id": "concept_for_finding_target_keys_in_loga",
+      "target_id": "node_prog_vis_01",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "prog_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_01"
+      ],
+      "timestamps": [
+        10.0
+      ],
+      "alignment_score": 0.3706,
+      "calibrated_confidence": 0.3636,
+      "validation_status": "unresolved",
+      "is_explicit": true,
+      "validation_issues": [
+        "Low alignment score (0.371 < 0.40)."
+      ]
+    },
+    {
+      "source_id": "node_prog_seg_02",
+      "target_id": "node_prog_vis_02",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "prog_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_02"
+      ],
+      "timestamps": [
+        45.0,
+        43.0
+      ],
+      "alignment_score": 0.3709,
+      "calibrated_confidence": 0.2908,
+      "validation_status": "unresolved",
+      "is_explicit": true,
+      "validation_issues": [
+        "Low alignment score (0.371 < 0.40)."
+      ]
+    },
+    {
+      "source_id": "concept_before",
+      "target_id": "node_prog_vis_02",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "prog_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_02"
+      ],
+      "timestamps": [
+        45.0
+      ],
+      "alignment_score": 0.3709,
+      "calibrated_confidence": 0.2908,
+      "validation_status": "unresolved",
+      "is_explicit": true,
+      "validation_issues": [
+        "Low alignment score (0.371 < 0.40)."
+      ]
+    },
+    {
+      "source_id": "concept_binary_search",
+      "target_id": "node_prog_vis_02",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "prog_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_02"
+      ],
+      "timestamps": [
+        45.0
+      ],
+      "alignment_score": 0.3709,
+      "calibrated_confidence": 0.2908,
+      "validation_status": "unresolved",
+      "is_explicit": true,
+      "validation_issues": [
+        "Low alignment score (0.371 < 0.40)."
+      ]
+    },
+    {
+      "source_id": "concept_sorted_arrays",
+      "target_id": "node_prog_vis_02",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "prog_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_02"
+      ],
+      "timestamps": [
+        45.0
+      ],
+      "alignment_score": 0.3709,
+      "calibrated_confidence": 0.2908,
+      "validation_status": "unresolved",
+      "is_explicit": true,
+      "validation_issues": [
+        "Low alignment score (0.371 < 0.40)."
+      ]
+    },
+    {
+      "source_id": "concept_sorted_arrays",
+      "target_id": "concept_binary_search",
+      "relation_type": "requires_prerequisite",
+      "provenance_segment_ids": [
+        "prog_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_02"
+      ],
+      "timestamps": [
+        45.0
+      ],
+      "alignment_score": 0.3709,
+      "calibrated_confidence": 0.2908,
+      "validation_status": "unresolved",
+      "is_explicit": true,
+      "validation_issues": [
+        "Low alignment score (0.371 < 0.40)."
+      ]
+    },
+    {
+      "source_id": "concept_array_indexing_fundamentals",
+      "target_id": "concept_binary_search",
+      "relation_type": "requires_prerequisite",
+      "provenance_segment_ids": [
+        "prog_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_02"
+      ],
+      "timestamps": [
+        45.0
+      ],
+      "alignment_score": 0.3709,
+      "calibrated_confidence": 0.2908,
+      "validation_status": "unresolved",
+      "is_explicit": true,
+      "validation_issues": [
+        "Low alignment score (0.371 < 0.40)."
+      ]
+    },
+    {
+      "source_id": "node_prog_seg_03",
+      "target_id": "node_prog_vis_03",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "prog_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_03"
+      ],
+      "timestamps": [
+        85.0,
+        83.0
+      ],
+      "alignment_score": 0.5355,
+      "calibrated_confidence": 0.6539,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_look",
+      "target_id": "node_prog_vis_03",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "prog_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_03"
+      ],
+      "timestamps": [
+        85.0
+      ],
+      "alignment_score": 0.5355,
+      "calibrated_confidence": 0.6539,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_while",
+      "target_id": "node_prog_vis_03",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "prog_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_03"
+      ],
+      "timestamps": [
+        85.0
+      ],
+      "alignment_score": 0.5355,
+      "calibrated_confidence": 0.6539,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_prog_seg_04",
+      "target_id": "node_prog_vis_03",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "prog_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_03"
+      ],
+      "timestamps": [
+        155.0,
+        83.0
+      ],
+      "alignment_score": 0.5038,
+      "calibrated_confidence": 0.6604,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_prog_seg_05",
+      "target_id": "node_prog_vis_04",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "prog_seg_05"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_04"
+      ],
+      "timestamps": [
+        230.0,
+        226.0
+      ],
+      "alignment_score": 0.5348,
+      "calibrated_confidence": 0.6453,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_because",
+      "target_id": "node_prog_vis_04",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "prog_seg_05"
+      ],
+      "provenance_visual_ids": [
+        "prog_vis_04"
+      ],
+      "timestamps": [
+        230.0
+      ],
+      "alignment_score": 0.5348,
+      "calibrated_confidence": 0.6453,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    }
+  ],
+  "validation_summary": {
+    "initial_node_count": 17,
+    "initial_edge_count": 14,
+    "schema_violations": 0,
+    "broken_timestamps": 0,
+    "missing_provenance": 0,
+    "cycles_detected": 0,
+    "duplicates_merged": 0,
+    "accepted_edges": 6,
+    "unresolved_edges": 8,
+    "rejected_edges": 0,
+    "issues": [
+      "Low alignment score (0.371 < 0.40).",
+      "Low alignment score (0.371 < 0.40).",
+      "Low alignment score (0.371 < 0.40).",
+      "Low alignment score (0.371 < 0.40).",
+      "Low alignment score (0.371 < 0.40).",
+      "Low alignment score (0.371 < 0.40).",
+      "Low alignment score (0.371 < 0.40).",
+      "Low alignment score (0.371 < 0.40)."
+    ],
+    "final_node_count": 17,
+    "final_edge_count": 14
+  }
+}

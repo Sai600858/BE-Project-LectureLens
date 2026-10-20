@@ -1,0 +1,660 @@
+{
+  "lecture_id": "cs_systems_01",
+  "subject": "general_cs",
+  "nodes": [
+    {
+      "node_id": "node_os_vis_01",
+      "label": "Operating Systems: Virtual Memory and Address Translation",
+      "node_type": "VisualEvent",
+      "subject": "general_cs",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "os_vis_01"
+      ],
+      "timestamps": [
+        5.0
+      ],
+      "attributes": {
+        "visual_type": "slide_text",
+        "extracted_text": "Operating Systems: Virtual Memory and Address Translation",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Title slide on virtual memory"
+      }
+    },
+    {
+      "node_id": "node_os_vis_02",
+      "label": "Prerequisites: Physical Memory, RAM Hardware, CPU Registers,",
+      "node_type": "VisualEvent",
+      "subject": "general_cs",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "os_vis_02"
+      ],
+      "timestamps": [
+        39.0
+      ],
+      "attributes": {
+        "visual_type": "slide_text",
+        "extracted_text": "Prerequisites: Physical Memory, RAM Hardware, CPU Registers, Address Bus",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Prerequisite systems concepts"
+      }
+    },
+    {
+      "node_id": "node_os_vis_03",
+      "label": "Virtual Address Translation Architecture: CPU -> MMU -> TLB ",
+      "node_type": "ArchitectureComponent",
+      "subject": "general_cs",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "os_vis_03"
+      ],
+      "timestamps": [
+        79.0
+      ],
+      "attributes": {
+        "visual_type": "architecture_diagram",
+        "extracted_text": "Virtual Address Translation Architecture: CPU -> MMU -> TLB -> Cache -> Physical Memory",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Hardware address translation block diagram"
+      }
+    },
+    {
+      "node_id": "node_os_vis_04",
+      "label": "Page Table Lookup and Page Fault Handler Routine Flowchart",
+      "node_type": "ArchitectureComponent",
+      "subject": "general_cs",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [
+        "os_vis_04"
+      ],
+      "timestamps": [
+        159.0
+      ],
+      "attributes": {
+        "visual_type": "diagram",
+        "extracted_text": "Page Table Lookup and Page Fault Handler Routine Flowchart",
+        "formula_latex": null,
+        "code_content": null,
+        "description": "Flowchart showing TLB miss and disk swap"
+      }
+    },
+    {
+      "node_id": "node_os_seg_01",
+      "label": "In this operating systems lecture, we investigate ...",
+      "node_type": "LectureSegment",
+      "subject": "general_cs",
+      "provenance_segment_ids": [
+        "os_seg_01"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        6.0,
+        35.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_os",
+        "text": "In this operating systems lecture, we investigate Virtual Memory and how hardware enables process address space isolation."
+      }
+    },
+    {
+      "node_id": "concept_virtual_memory",
+      "label": "Virtual Memory",
+      "node_type": "Concept",
+      "subject": "general_cs",
+      "provenance_segment_ids": [
+        "os_seg_01",
+        "os_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_01",
+        "os_vis_02"
+      ],
+      "timestamps": [
+        6.0,
+        40.0
+      ],
+      "attributes": {
+        "canonical_name": "virtual memory"
+      }
+    },
+    {
+      "node_id": "node_os_seg_02",
+      "label": "Before learning Virtual Memory, one must understan...",
+      "node_type": "LectureSegment",
+      "subject": "general_cs",
+      "provenance_segment_ids": [
+        "os_seg_02"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        40.0,
+        75.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_os",
+        "text": "Before learning Virtual Memory, one must understand Physical Memory and CPU addressing basics."
+      }
+    },
+    {
+      "node_id": "concept_before",
+      "label": "Before",
+      "node_type": "Concept",
+      "subject": "general_cs",
+      "provenance_segment_ids": [
+        "os_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_02"
+      ],
+      "timestamps": [
+        40.0
+      ],
+      "attributes": {
+        "canonical_name": "before"
+      }
+    },
+    {
+      "node_id": "concept_physical_memory",
+      "label": "Physical Memory",
+      "node_type": "Concept",
+      "subject": "general_cs",
+      "provenance_segment_ids": [
+        "os_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_02"
+      ],
+      "timestamps": [
+        40.0
+      ],
+      "attributes": {
+        "canonical_name": "physical memory"
+      }
+    },
+    {
+      "node_id": "concept_cpu_addressing_basics",
+      "label": "Cpu Addressing Basics",
+      "node_type": "Prerequisite",
+      "subject": "general_cs",
+      "provenance_segment_ids": [],
+      "provenance_visual_ids": [],
+      "timestamps": [],
+      "attributes": {}
+    },
+    {
+      "node_id": "node_os_seg_03",
+      "label": "Examining this architecture diagram shows the Tran...",
+      "node_type": "LectureSegment",
+      "subject": "general_cs",
+      "provenance_segment_ids": [
+        "os_seg_03"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        80.0,
+        155.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_os",
+        "text": "Examining this architecture diagram shows the Translation Lookaside Buffer or TLB. When the CPU emits a virtual address, the TLB checks for a cached translation."
+      }
+    },
+    {
+      "node_id": "concept_examining",
+      "label": "Examining",
+      "node_type": "Concept",
+      "subject": "general_cs",
+      "provenance_segment_ids": [
+        "os_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_03"
+      ],
+      "timestamps": [
+        80.0
+      ],
+      "attributes": {
+        "canonical_name": "examining"
+      }
+    },
+    {
+      "node_id": "concept_translation_lookaside_buffer",
+      "label": "Translation Lookaside Buffer",
+      "node_type": "Concept",
+      "subject": "general_cs",
+      "provenance_segment_ids": [
+        "os_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_03"
+      ],
+      "timestamps": [
+        80.0
+      ],
+      "attributes": {
+        "canonical_name": "translation lookaside buffer"
+      }
+    },
+    {
+      "node_id": "node_os_seg_04",
+      "label": "If a TLB miss occurs, the Memory Management Unit w...",
+      "node_type": "LectureSegment",
+      "subject": "general_cs",
+      "provenance_segment_ids": [
+        "os_seg_04"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        160.0,
+        230.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_os",
+        "text": "If a TLB miss occurs, the Memory Management Unit walks the Page Table in physical RAM to resolve the frame number."
+      }
+    },
+    {
+      "node_id": "concept_memory_management_unit",
+      "label": "Memory Management Unit",
+      "node_type": "Concept",
+      "subject": "general_cs",
+      "provenance_segment_ids": [
+        "os_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_04"
+      ],
+      "timestamps": [
+        160.0
+      ],
+      "attributes": {
+        "canonical_name": "memory management unit"
+      }
+    },
+    {
+      "node_id": "concept_page_table",
+      "label": "Page Table",
+      "node_type": "Concept",
+      "subject": "general_cs",
+      "provenance_segment_ids": [
+        "os_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_04"
+      ],
+      "timestamps": [
+        160.0
+      ],
+      "attributes": {
+        "canonical_name": "page table"
+      }
+    },
+    {
+      "node_id": "node_os_seg_05",
+      "label": "If the valid bit is zero, a Page Fault exception o...",
+      "node_type": "LectureSegment",
+      "subject": "general_cs",
+      "provenance_segment_ids": [
+        "os_seg_05"
+      ],
+      "provenance_visual_ids": [],
+      "timestamps": [
+        235.0,
+        310.0
+      ],
+      "attributes": {
+        "speaker": "lecturer_os",
+        "text": "If the valid bit is zero, a Page Fault exception occurs, prompting the operating system kernel to fetch the page from secondary disk storage."
+      }
+    },
+    {
+      "node_id": "concept_page_fault",
+      "label": "Page Fault",
+      "node_type": "Concept",
+      "subject": "general_cs",
+      "provenance_segment_ids": [
+        "os_seg_05"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_04"
+      ],
+      "timestamps": [
+        235.0
+      ],
+      "attributes": {
+        "canonical_name": "page fault"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "node_os_seg_01",
+      "target_id": "node_os_vis_01",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "os_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_01"
+      ],
+      "timestamps": [
+        6.0,
+        5.0
+      ],
+      "alignment_score": 0.5333,
+      "calibrated_confidence": 0.6146,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_virtual_memory",
+      "target_id": "node_os_vis_01",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "os_seg_01"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_01"
+      ],
+      "timestamps": [
+        6.0
+      ],
+      "alignment_score": 0.5333,
+      "calibrated_confidence": 0.6146,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_os_seg_02",
+      "target_id": "node_os_vis_02",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "os_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_02"
+      ],
+      "timestamps": [
+        40.0,
+        39.0
+      ],
+      "alignment_score": 0.4585,
+      "calibrated_confidence": 0.3586,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_before",
+      "target_id": "node_os_vis_02",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "os_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_02"
+      ],
+      "timestamps": [
+        40.0
+      ],
+      "alignment_score": 0.4585,
+      "calibrated_confidence": 0.3586,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_virtual_memory",
+      "target_id": "node_os_vis_02",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "os_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_02"
+      ],
+      "timestamps": [
+        40.0
+      ],
+      "alignment_score": 0.4585,
+      "calibrated_confidence": 0.3586,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_physical_memory",
+      "target_id": "node_os_vis_02",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "os_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_02"
+      ],
+      "timestamps": [
+        40.0
+      ],
+      "alignment_score": 0.4585,
+      "calibrated_confidence": 0.3586,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_physical_memory",
+      "target_id": "concept_virtual_memory",
+      "relation_type": "requires_prerequisite",
+      "provenance_segment_ids": [
+        "os_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_02"
+      ],
+      "timestamps": [
+        40.0
+      ],
+      "alignment_score": 0.4585,
+      "calibrated_confidence": 0.3586,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_cpu_addressing_basics",
+      "target_id": "concept_virtual_memory",
+      "relation_type": "requires_prerequisite",
+      "provenance_segment_ids": [
+        "os_seg_02"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_02"
+      ],
+      "timestamps": [
+        40.0
+      ],
+      "alignment_score": 0.4585,
+      "calibrated_confidence": 0.3586,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_os_seg_03",
+      "target_id": "node_os_vis_03",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "os_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_03"
+      ],
+      "timestamps": [
+        80.0,
+        79.0
+      ],
+      "alignment_score": 0.5695,
+      "calibrated_confidence": 0.6792,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_examining",
+      "target_id": "node_os_vis_03",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "os_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_03"
+      ],
+      "timestamps": [
+        80.0
+      ],
+      "alignment_score": 0.5695,
+      "calibrated_confidence": 0.6792,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_translation_lookaside_buffer",
+      "target_id": "node_os_vis_03",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "os_seg_03"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_03"
+      ],
+      "timestamps": [
+        80.0
+      ],
+      "alignment_score": 0.5695,
+      "calibrated_confidence": 0.6792,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_os_seg_04",
+      "target_id": "node_os_vis_04",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "os_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_04"
+      ],
+      "timestamps": [
+        160.0,
+        159.0
+      ],
+      "alignment_score": 0.4628,
+      "calibrated_confidence": 0.4741,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_memory_management_unit",
+      "target_id": "node_os_vis_04",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "os_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_04"
+      ],
+      "timestamps": [
+        160.0
+      ],
+      "alignment_score": 0.4628,
+      "calibrated_confidence": 0.4741,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_page_table",
+      "target_id": "node_os_vis_04",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "os_seg_04"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_04"
+      ],
+      "timestamps": [
+        160.0
+      ],
+      "alignment_score": 0.4628,
+      "calibrated_confidence": 0.4741,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "node_os_seg_05",
+      "target_id": "node_os_vis_04",
+      "relation_type": "corresponds_to",
+      "provenance_segment_ids": [
+        "os_seg_05"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_04"
+      ],
+      "timestamps": [
+        235.0,
+        159.0
+      ],
+      "alignment_score": 0.4562,
+      "calibrated_confidence": 0.5872,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    },
+    {
+      "source_id": "concept_page_fault",
+      "target_id": "node_os_vis_04",
+      "relation_type": "explains",
+      "provenance_segment_ids": [
+        "os_seg_05"
+      ],
+      "provenance_visual_ids": [
+        "os_vis_04"
+      ],
+      "timestamps": [
+        235.0
+      ],
+      "alignment_score": 0.4562,
+      "calibrated_confidence": 0.5872,
+      "validation_status": "accepted",
+      "is_explicit": true,
+      "validation_issues": []
+    }
+  ],
+  "validation_summary": {
+    "initial_node_count": 18,
+    "initial_edge_count": 16,
+    "schema_violations": 0,
+    "broken_timestamps": 0,
+    "missing_provenance": 0,
+    "cycles_detected": 0,
+    "duplicates_merged": 0,
+    "accepted_edges": 16,
+    "unresolved_edges": 0,
+    "rejected_edges": 0,
+    "issues": [],
+    "final_node_count": 18,
+    "final_edge_count": 16,
+    "remaining_violations": 0
+  }
+}
