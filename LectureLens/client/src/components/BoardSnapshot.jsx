@@ -259,6 +259,15 @@ export function BoardSnapshot({ snapshot, onJumpTimestamp }) {
   const [activeView, setActiveView] = useState('all'); // 'all' | 'board' | 'concept'
   const [showImageZoom, setShowImageZoom] = useState(false);
 
+  useEffect(() => {
+    if (!showImageZoom) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setShowImageZoom(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showImageZoom]);
+
   const rawImg = snapshot.image_path || snapshot.imagePath || snapshot.imageBase64 || '';
   let imageUrl = null;
   if (rawImg) {
@@ -347,16 +356,30 @@ export function BoardSnapshot({ snapshot, onJumpTimestamp }) {
 
       {/* Image Zoom Lightbox Modal */}
       {showImageZoom && imageUrl && (
-        <div style={S.modalOverlay} onClick={() => setShowImageZoom(false)}>
+        <div
+          style={S.modalOverlay}
+          onClick={() => setShowImageZoom(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="board-snapshot-zoom-title"
+        >
           <div style={S.modalCard} onClick={(e) => e.stopPropagation()}>
             <div style={S.modalHeader}>
-              <h4 style={S.modalTitle}>🔍 {slideTitle || mainConcept || 'Whiteboard Frame Snapshot'}</h4>
-              <button onClick={() => setShowImageZoom(false)} style={S.modalCloseBtn}>✕</button>
+              <h4 id="board-snapshot-zoom-title" style={S.modalTitle}>
+                🔍 {slideTitle || mainConcept || 'Whiteboard Frame Snapshot'}
+              </h4>
+              <button
+                onClick={() => setShowImageZoom(false)}
+                style={S.modalCloseBtn}
+                aria-label="Close enlarged snapshot view"
+              >
+                ✕
+              </button>
             </div>
             <div style={S.modalBody}>
               <img
                 src={imageUrl}
-                alt="Enlarged snapshot"
+                alt={slideTitle || mainConcept || 'Enlarged snapshot'}
                 style={{ maxWidth: '100%', maxHeight: '78vh', objectFit: 'contain', borderRadius: '8px' }}
               />
             </div>
@@ -791,12 +814,17 @@ const S = {
     margin: 0,
   },
   modalCloseBtn: {
-    background: 'transparent',
-    border: 'none',
+    background: 'rgba(255, 255, 255, 0.08)',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: '8px',
     color: '#94a3b8',
     fontSize: '18px',
     cursor: 'pointer',
-    padding: '4px',
+    minWidth: '44px',
+    minHeight: '44px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalBody: {
     overflow: 'auto',

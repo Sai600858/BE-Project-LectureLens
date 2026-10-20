@@ -87,13 +87,39 @@ function resolveVizImage(viz) {
 
 /* ── Diagram Enlarge Modal ───────────────────────────────────────────────── */
 function DiagramModal({ title, svg, image, caption, onClose }) {
+  const closeBtnRef = useRef(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    closeBtnRef.current?.focus();
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   if (!svg && !image) return null;
   return (
-    <div style={styles.modalOverlay} onClick={onClose}>
+    <div
+      style={styles.modalOverlay}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="diagram-modal-title"
+    >
       <div style={styles.modalCard} onClick={(e) => e.stopPropagation()}>
         <div style={styles.modalHeader}>
-          <h4 style={styles.modalTitle}>🔍 {title || 'Visual Zoom View'}</h4>
-          <button onClick={onClose} style={styles.modalCloseBtn}>✕</button>
+          <h4 id="diagram-modal-title" style={styles.modalTitle}>
+            🔍 {title || 'Visual Zoom View'}
+          </h4>
+          <button
+            ref={closeBtnRef}
+            onClick={onClose}
+            style={styles.modalCloseBtn}
+            aria-label="Close enlarged diagram view"
+          >
+            ✕
+          </button>
         </div>
         <div style={styles.modalBody}>
           {svg ? (

@@ -53,17 +53,21 @@ export default function PostLectureHub() {
   const [ragQuestion, setRagQuestion] = useState('');
   const [ragHistory, setRagHistory] = useState([]);
   const [isAskingRag, setIsAskingRag] = useState(false);
+  const [ragError, setRagError] = useState(null);
 
   // Quiz
   const [quizData, setQuizData] = useState(null);
   const [quizAnswers, setQuizAnswers] = useState({});
   const [quizResult, setQuizResult] = useState(null);
   const [isSubmittingQuiz, setIsSubmittingQuiz] = useState(false);
+  const [quizSubmitError, setQuizSubmitError] = useState(null);
 
   // Flashcards
   const [flashcards, setFlashcards] = useState([]);
   const [currentCardIdx, setCurrentCardIdx] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isSavingCard, setIsSavingCard] = useState(false);
+  const [cardFeedback, setCardFeedback] = useState(null);
 
   // Whiteboard & Slide Snapshots
   const [boardContents, setBoardContents] = useState([]);
@@ -223,29 +227,40 @@ export default function PostLectureHub() {
   // Ask RAG
   const handleAskRag = async (qText) => {
     const q = (qText || ragQuestion).trim();
-    if (!q) return;
+    if (!q || isAskingRag) return;
     try {
       setIsAskingRag(true);
+      setRagError(null);
       const res = await aiApi.askLecture(lectureId, q);
       setRagHistory((prev) => [res, ...prev]);
       setRagQuestion('');
     } catch (e) {
-      alert(e.response?.data?.error || 'AI Tutor query failed');
+      setRagError(e.response?.data?.error || e.message || 'AI Tutor inquiry failed or timed out. Please retry.');
     } finally {
       setIsAskingRag(false);
     }
   };
 
-  // Submit Quiz
+  // Submit Quiz (with double-submit guard and validation)
   const handleSubmitQuiz = async () => {
+    if (isSubmittingQuiz) return;
     const quizId = quizData?.quiz?.id || quizData?.id;
-    if (!quizId) return;
+    if (!quizId) {
+      setQuizSubmitError('Quiz identifier missing. Please reload the lecture workspace.');
+      return;
+    }
+    const answerKeys = Object.keys(quizAnswers);
+    if (answerKeys.length === 0) {
+      setQuizSubmitError('Please select or enter an answer for at least one question before submitting.');
+      return;
+    }
     try {
       setIsSubmittingQuiz(true);
+      setQuizSubmitError(null);
       const res = await aiApi.submitQuiz(lectureId, quizId, quizAnswers);
       setQuizResult(res);
     } catch (e) {
-      alert(e.response?.data?.error || 'Quiz submission failed');
+      setQuizSubmitError(e.response?.data?.error || e.message || 'Quiz submission failed. Please check your connection and retry.');
     } finally {
       setIsSubmittingQuiz(false);
     }
@@ -262,14 +277,25 @@ export default function PostLectureHub() {
     setCurrentCardIdx((prev) => (prev - 1 + flashcards.length) % flashcards.length);
   };
 
+  // Flashcards spaced-repetition feedback & progress
   const handleFlashcardStatus = async (status) => {
+    if (isSavingCard) return;
     const card = flashcards[currentCardIdx];
     if (!card) return;
     try {
+      setIsSavingCard(true);
+      setCardFeedback(status === 'learned' ? '✅ Mastered!' : '⚠️ Marked Difficult');
       await aiApi.updateFlashcardProgress(lectureId, card.id, status);
-      nextCard();
+      setTimeout(() => {
+        setCardFeedback(null);
+        nextCard();
+      }, 350);
     } catch (e) {
-      console.warn('Failed to update flashcard progress:', e);
+      setCardFeedback('⚠️ Could not sync card status');
+      setTimeout(() => setCardFeedback(null), 2500);
+      nextCard();
+    } finally {
+      setIsSavingCard(false);
     }
   };
 
@@ -497,6 +523,7 @@ export default function PostLectureHub() {
                           role="button"
                           tabIndex={0}
                           aria-label={`Chapter ${idx + 1}: ${ch.title}`}
+                          aria-current={isActive ? 'step' : undefined}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
@@ -545,14 +572,14 @@ export default function PostLectureHub() {
                     <button
                       onClick={() => handleSearch('')}
                       style={styles.clearSearchBtn}
-                      aria-label="Clear search"
+                      aria-label="Clear search query"
                     >
                       ✕
                     </button>
                   )}
                 </div>
 
-                <div style={styles.transcriptMeta}>
+                <div style={styles.transcriptMeta} aria-live="polite">
                   <Badge variant="cyan" size="md">
                     {searchQuery ? `${searchResults.length} matching segment(s)` : `${transcriptSegments.length} total segments`}
                   </Badge>
@@ -804,10 +831,26 @@ export default function PostLectureHub() {
                   {isAskingRag ? 'Consulting…' : 'Ask AI'}
                 </Button>
               </div>
+              {ragError && (
+                <div style={styles.errorAlert} role="alert">
+                  <span>⚠️ {ragError}</span>
+                  <button
+                    onClick={() => setRagError(null)}
+                    style={styles.dismissBtn}
+                    aria-label="Dismiss error"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              <div style={styles.ragDisclaimer}>
+                ℹ️ <em>Answers are synthesized from speech transcripts and blackboard OCR. AI outputs may require verification with original lecture media.</em>
+              </div>
             </div>
 
             {/* Q&A Conversation Thread */}
-            <div style={styles.ragThread}>
+            <div style={styles.ragThread} aria-live="polite">
               {ragHistory.length === 0 ? (
                 <div style={styles.emptyCard} className="glass-panel">
                   <span style={{ fontSize: '32px' }} aria-hidden="true">💡</span>
@@ -836,6 +879,13 @@ export default function PostLectureHub() {
                           onClick={() => jumpToTimestamp(item.timestampSeconds)}
                           style={styles.citeTimestampBtn}
                           title="Seek video to referenced timestamp"
+                          aria-label={`Jump video to timestamp ${item.relevantTimestamp}`}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              jumpToTimestamp(item.timestampSeconds);
+                            }
+                          }}
                         >
                           ⏱️ {item.relevantTimestamp}
                         </button>
@@ -853,6 +903,13 @@ export default function PostLectureHub() {
                               onClick={() => jumpToTimestamp(src.timestampSeconds)}
                               title={src.snippet}
                               style={styles.sourceChip}
+                              aria-label={`Jump video to segment at ${src.timestamp}`}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  jumpToTimestamp(src.timestampSeconds);
+                                }
+                              }}
                             >
                               <span>⏱️ {src.timestamp}</span>
                               <span style={{ color: '#64748b' }}>({src.type})</span>
@@ -883,6 +940,19 @@ export default function PostLectureHub() {
                   )}
                 </div>
 
+                {quizSubmitError && (
+                  <div style={styles.errorAlert} role="alert">
+                    <span>⚠️ {quizSubmitError}</span>
+                    <button
+                      onClick={() => setQuizSubmitError(null)}
+                      style={styles.dismissBtn}
+                      aria-label="Dismiss error"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
                 {quizResult && (
                   <div
                     style={{
@@ -891,6 +961,7 @@ export default function PostLectureHub() {
                       background: quizResult.percentage >= 70 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
                     }}
                     role="status"
+                    aria-live="polite"
                   >
                     <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#ffffff', margin: 0 }}>
                       Assessment Score: {quizResult.score} / {quizResult.totalQuestions} ({quizResult.percentage}%)
@@ -911,6 +982,7 @@ export default function PostLectureHub() {
                   <div style={styles.questionList}>
                     {quizData.questions.map((q, idx) => {
                       const resultItem = quizResult?.results?.find((r) => r.questionId === q.id);
+                      const qLabelId = `q_label_${q.id || idx}`;
 
                       return (
                         <div key={q.id || idx} style={styles.qCard}>
@@ -918,33 +990,39 @@ export default function PostLectureHub() {
                             <span style={styles.qNum}>Question {idx + 1}</span>
                             <Badge variant="neutral" size="sm">{q.difficulty || 'Normal'}</Badge>
                           </div>
-                          <p style={styles.qBody}>{q.question_text || q.questionText}</p>
+                          <p id={qLabelId} style={styles.qBody}>{q.question_text || q.questionText}</p>
 
                           {/* Options list */}
                           {q.options?.length > 0 ? (
-                            <div style={styles.optionsList} role="radiogroup" aria-label={`Question ${idx + 1} options`}>
-                              {q.options.map((opt, optIdx) => (
-                                <label key={optIdx} style={styles.optionLabel}>
-                                  <input
-                                    type="radio"
-                                    name={`q_${q.id}`}
-                                    value={opt}
-                                    checked={quizAnswers[q.id] === opt}
-                                    onChange={() => setQuizAnswers({ ...quizAnswers, [q.id]: opt })}
-                                    disabled={Boolean(quizResult)}
-                                    style={styles.radioInput}
-                                  />
-                                  <span style={styles.optionText}>{opt}</span>
-                                </label>
-                              ))}
+                            <div style={styles.optionsList} role="radiogroup" aria-labelledby={qLabelId}>
+                              {q.options.map((opt, optIdx) => {
+                                const optInputId = `q_${q.id || idx}_opt_${optIdx}`;
+                                return (
+                                  <label key={optIdx} htmlFor={optInputId} style={styles.optionLabel}>
+                                    <input
+                                      id={optInputId}
+                                      type="radio"
+                                      name={`q_${q.id || idx}`}
+                                      value={opt}
+                                      checked={quizAnswers[q.id] === opt}
+                                      onChange={() => setQuizAnswers({ ...quizAnswers, [q.id]: opt })}
+                                      disabled={Boolean(quizResult) || isSubmittingQuiz}
+                                      style={styles.radioInput}
+                                    />
+                                    <span style={styles.optionText}>{opt}</span>
+                                  </label>
+                                );
+                              })}
                             </div>
                           ) : (
                             <input
+                              id={`q_${q.id || idx}_text_ans`}
+                              aria-labelledby={qLabelId}
                               placeholder="Type your answer here..."
                               value={quizAnswers[q.id] || ''}
                               onChange={(e) => setQuizAnswers({ ...quizAnswers, [q.id]: e.target.value })}
                               style={styles.textAnswerInput}
-                              disabled={Boolean(quizResult)}
+                              disabled={Boolean(quizResult) || isSubmittingQuiz}
                             />
                           )}
 
@@ -1023,7 +1101,8 @@ export default function PostLectureHub() {
                       }}
                       role="button"
                       tabIndex={0}
-                      aria-label={`Flashcard: ${isFlipped ? 'Answer' : 'Question'}. Click to flip.`}
+                      aria-expanded={isFlipped}
+                      aria-label={`Flashcard: ${isFlipped ? 'Back, answer' : 'Front, concept question'}. Click to flip.`}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
@@ -1041,12 +1120,18 @@ export default function PostLectureHub() {
                     </div>
 
                     {/* Card Actions */}
-                    <div style={styles.fcControlRow}>
-                      <button onClick={prevCard} style={styles.fcNavBtn} aria-label="Previous card">
+                    <div style={styles.fcControlRow} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={prevCard}
+                        disabled={isSavingCard}
+                        style={styles.fcNavBtn}
+                        aria-label="Previous card"
+                      >
                         ← Prev
                       </button>
                       <button
                         onClick={() => handleFlashcardStatus('difficult')}
+                        disabled={isSavingCard}
                         style={styles.fcDiffBtn}
                         aria-label="Mark flashcard as difficult"
                       >
@@ -1054,15 +1139,27 @@ export default function PostLectureHub() {
                       </button>
                       <button
                         onClick={() => handleFlashcardStatus('learned')}
+                        disabled={isSavingCard}
                         style={styles.fcLearnBtn}
                         aria-label="Mark flashcard as learned"
                       >
                         ✅ Mastered
                       </button>
-                      <button onClick={nextCard} style={styles.fcNavBtn} aria-label="Next card">
+                      <button
+                        onClick={nextCard}
+                        disabled={isSavingCard}
+                        style={styles.fcNavBtn}
+                        aria-label="Next card"
+                      >
                         Next →
                       </button>
                     </div>
+
+                    {cardFeedback && (
+                      <div style={styles.cardFeedbackToast} role="status" aria-live="polite">
+                        {cardFeedback}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -2045,5 +2142,48 @@ const styles = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
     gap: '20px',
+  },
+  errorAlert: {
+    background: 'rgba(239, 68, 68, 0.15)',
+    border: '1px solid rgba(239, 68, 68, 0.35)',
+    borderRadius: '10px',
+    padding: '12px 16px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    color: '#fca5a5',
+    fontSize: '13px',
+    fontWeight: '600',
+    marginBottom: '16px',
+  },
+  dismissBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: '#f87171',
+    cursor: 'pointer',
+    fontSize: '16px',
+    padding: '4px',
+    minHeight: '32px',
+    minWidth: '32px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardFeedbackToast: {
+    padding: '8px 14px',
+    borderRadius: '8px',
+    background: 'rgba(56, 189, 248, 0.15)',
+    border: '1px solid rgba(56, 189, 248, 0.3)',
+    color: '#38bdf8',
+    fontSize: '12.5px',
+    fontWeight: '700',
+    textAlign: 'center',
+    marginTop: '6px',
+  },
+  ragDisclaimer: {
+    fontSize: '11.5px',
+    color: '#94a3b8',
+    marginTop: '12px',
+    lineHeight: 1.5,
   },
 };
