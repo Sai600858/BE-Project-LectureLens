@@ -86,6 +86,64 @@ const aiLimiter = rateLimit({
   message: { error: 'AI generation rate limit reached. Please wait a moment before trying again.' },
 });
 
+const SPRING_BOOT_BASE_URL = process.env.SPRING_BOOT_URL || process.env.SPRING_BACKEND_URL || 'http://localhost:8080';
+
+async function forwardRequestToSpringBoot(req, res, targetPath, options = {}) {
+  const isBinary = options.binary || false;
+  try {
+    const url = `${SPRING_BOOT_BASE_URL}${targetPath}`;
+    const headers = { ...req.headers };
+    delete headers.host;
+    delete headers['content-length'];
+
+    const fetchOptions = {
+      method: req.method,
+      headers: {
+        ...headers,
+        'X-Forwarded-By': 'node-gateway',
+        ...(req.user ? { 'X-User-Id': req.user.id, 'X-User-Role': req.user.role } : {}),
+      },
+      signal: AbortSignal.timeout(options.timeout || 15000),
+    };
+
+    if (req.method !== 'GET' && req.method !== 'HEAD' && req.body) {
+      fetchOptions.headers['Content-Type'] = 'application/json';
+      fetchOptions.body = JSON.stringify(req.body);
+    }
+
+    const response = await fetch(url, fetchOptions);
+
+    if (isBinary) {
+      if (!response.ok) {
+        throw new Error(`Spring Boot returned status ${response.status}`);
+      }
+      for (const [k, v] of response.headers.entries()) {
+        if (['content-type', 'content-disposition', 'content-length'].includes(k.toLowerCase())) {
+          res.setHeader(k, v);
+        }
+      }
+      res.status(response.status);
+      const arrayBuffer = await response.arrayBuffer();
+      return res.send(Buffer.from(arrayBuffer));
+    }
+
+    if (!response.ok && response.status >= 500) {
+      throw new Error(`Spring Boot server error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (err) {
+    if (options.fallback) {
+      console.warn(`[NodeGateway] Spring Boot forwarding failed for ${targetPath}: ${err.message}. Invoking legacy fallback.`);
+      res.setHeader('X-Legacy-Fallback-Used', 'true');
+      return await options.fallback();
+    }
+    console.error(`[NodeGateway] Spring Boot forwarding failed for ${targetPath}: ${err.message}`);
+    throw err;
+  }
+}
+
 // Multer upload config with file validation & size limit
 const UPLOADS_DIR = path.join(__dirname, '..', 'data', 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) {
@@ -267,6 +325,39 @@ app.post('/internal/media/notify/transcript', verifyServiceAuth, (req, res) => {
         status: status || 'live',
       });
     }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/internal/media/notify/summary', verifyServiceAuth, (req, res) => {
+  try {
+    const { roomId, lectureId, summary } = req.body;
+    if (roomId) io.to(roomId).emit('summaryGenerated', { roomId, lectureId, summary });
+    if (lectureId && lectureId !== roomId) io.to(lectureId).emit('summaryGenerated', { roomId, lectureId, summary });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/internal/media/notify/notes', verifyServiceAuth, (req, res) => {
+  try {
+    const { roomId, lectureId, notes } = req.body;
+    if (roomId) io.to(roomId).emit('notesGenerated', { roomId, lectureId, notes });
+    if (lectureId && lectureId !== roomId) io.to(lectureId).emit('notesGenerated', { roomId, lectureId, notes });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/internal/media/notify/chapters', verifyServiceAuth, (req, res) => {
+  try {
+    const { roomId, lectureId, chapters } = req.body;
+    if (roomId) io.to(roomId).emit('chaptersGenerated', { roomId, lectureId, chapters });
+    if (lectureId && lectureId !== roomId) io.to(lectureId).emit('chaptersGenerated', { roomId, lectureId, chapters });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -667,10 +758,51 @@ app.get('/api/lectures/:lectureId/screen-contents', optionalAuth, async (req, re
 
 // ─── AI SUMMARY & STUDY NOTES ROUTES ─────────────────────────────────────────
 
+const SPRING_BACKEND_URL = SPRING_BOOT_BASE_URL;
+
+async function forwardToSpringBoot(req, path, options = {}) {
+  try {
+    const url = `${SPRING_BACKEND_URL}${path}`;
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Forwarded-By': 'node-gateway',
+    };
+    if (req.headers.authorization) {
+      headers['Authorization'] = req.headers.authorization;
+    }
+    if (req.headers['x-correlation-id']) {
+      headers['X-Correlation-Id'] = req.headers['x-correlation-id'];
+    }
+
+    const fetchOptions = {
+      method: options.method || req.method,
+      headers,
+      signal: AbortSignal.timeout(options.timeout || 10000),
+    };
+    if (options.body) {
+      fetchOptions.body = JSON.stringify(options.body);
+    } else if (req.body && Object.keys(req.body).length > 0 && req.method !== 'GET') {
+      fetchOptions.body = JSON.stringify(req.body);
+    }
+
+    const resp = await fetch(url, fetchOptions);
+    const data = await resp.json().catch(() => ({}));
+    return { success: true, status: resp.status, data };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
 app.post('/api/lectures/:lectureId/summary', aiLimiter, optionalAuth, async (req, res) => {
   try {
     const access = await checkLectureAccess(req.params.lectureId, req.user);
     if (!access.allowed) return res.status(access.status).json({ error: access.error });
+
+    // Delegate to authoritative Spring Boot orchestrator if available
+    const springResp = await forwardToSpringBoot(req, `/api/lectures/${req.params.lectureId}/summary`);
+    if (springResp.success) {
+      return res.status(springResp.status).json(springResp.data);
+    }
 
     const summary = await generateLectureSummary(req.params.lectureId);
     res.json({ summary });
@@ -683,6 +815,12 @@ app.get('/api/lectures/:lectureId/summary', optionalAuth, async (req, res) => {
   try {
     const access = await checkLectureAccess(req.params.lectureId, req.user);
     if (!access.allowed) return res.status(access.status).json({ error: access.error });
+
+    // Delegate to authoritative Spring Boot orchestrator if available
+    const springResp = await forwardToSpringBoot(req, `/api/lectures/${req.params.lectureId}/summary`);
+    if (springResp.success && springResp.status === 200) {
+      return res.json(springResp.data);
+    }
 
     let summaryRow = await get('SELECT * FROM summaries WHERE lecture_id = ?', [req.params.lectureId]);
     if (!summaryRow) {
@@ -714,6 +852,13 @@ app.post('/api/lectures/:lectureId/notes', aiLimiter, optionalAuth, async (req, 
     if (!access.allowed) return res.status(access.status).json({ error: access.error });
 
     const mode = req.body.mode || 'detailed';
+
+    // Delegate to authoritative Spring Boot orchestrator if available
+    const springResp = await forwardToSpringBoot(req, `/api/lectures/${req.params.lectureId}/notes`);
+    if (springResp.success) {
+      return res.status(springResp.status).json(springResp.data);
+    }
+
     const notes = await generateStudyNotes(req.params.lectureId, mode);
     res.json({ notes });
   } catch (err) {
@@ -727,6 +872,13 @@ app.get('/api/lectures/:lectureId/notes', optionalAuth, async (req, res) => {
     if (!access.allowed) return res.status(access.status).json({ error: access.error });
 
     const mode = req.query.mode || 'detailed';
+
+    // Delegate to authoritative Spring Boot orchestrator if available
+    const springResp = await forwardToSpringBoot(req, `/api/lectures/${req.params.lectureId}/notes?mode=${encodeURIComponent(mode)}`);
+    if (springResp.success && springResp.status === 200) {
+      return res.json(springResp.data);
+    }
+
     let note = await get('SELECT * FROM study_notes WHERE lecture_id = ? AND mode = ?', [req.params.lectureId, mode]);
     if (!note) {
       const generated = await generateStudyNotes(req.params.lectureId, mode);
@@ -803,6 +955,30 @@ app.get('/api/lectures/:lectureId/chapters', aiLimiter, optionalAuth, async (req
     const access = await checkLectureAccess(req.params.lectureId, req.user);
     if (!access.allowed) return res.status(access.status).json({ error: access.error });
 
+    // Delegate to authoritative Spring Boot orchestrator if available
+    const springResp = await forwardToSpringBoot(req, `/api/lectures/${req.params.lectureId}/chapters`);
+    if (springResp.success && springResp.status === 200) {
+      return res.json(springResp.data);
+    }
+
+    const chapters = await generateLectureChapters(req.params.lectureId);
+    res.json({ chapters });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/lectures/:lectureId/chapters', aiLimiter, optionalAuth, async (req, res) => {
+  try {
+    const access = await checkLectureAccess(req.params.lectureId, req.user);
+    if (!access.allowed) return res.status(access.status).json({ error: access.error });
+
+    // Delegate to authoritative Spring Boot orchestrator if available
+    const springResp = await forwardToSpringBoot(req, `/api/lectures/${req.params.lectureId}/chapters`, { method: 'POST' });
+    if (springResp.success) {
+      return res.status(springResp.status).json(springResp.data);
+    }
+
     const chapters = await generateLectureChapters(req.params.lectureId);
     res.json({ chapters });
   } catch (err) {
@@ -822,8 +998,12 @@ app.post('/api/lectures/:lectureId/ask', aiLimiter, optionalAuth, async (req, re
       return res.status(400).json({ error: 'Valid question text is required' });
     }
 
-    const result = await askLecture(req.params.lectureId, question.trim().slice(0, 1000));
-    res.json(result);
+    await forwardRequestToSpringBoot(req, res, `/api/lectures/${req.params.lectureId}/ask`, {
+      fallback: async () => {
+        const result = await askLecture(req.params.lectureId, question.trim().slice(0, 1000));
+        res.json(result);
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1008,14 +1188,18 @@ app.get('/api/lectures/:lectureId/quiz', aiLimiter, optionalAuth, async (req, re
     const access = await checkLectureAccess(req.params.lectureId, req.user);
     if (!access.allowed) return res.status(access.status).json({ error: access.error });
 
-    const result = await generateQuiz(req.params.lectureId);
-    const isTeacherOrAdmin = req.user && (req.user.role === 'ADMIN' || req.user.id === access.lecture.host_id);
-    const questions = (result.questions || []).map((q) => {
-      if (isTeacherOrAdmin) return q;
-      const { correct_answer, correctAnswer, explanation, ...safeQ } = q;
-      return safeQ;
+    await forwardRequestToSpringBoot(req, res, `/api/lectures/${req.params.lectureId}/quiz`, {
+      fallback: async () => {
+        const result = await generateQuiz(req.params.lectureId);
+        const isTeacherOrAdmin = req.user && (req.user.role === 'ADMIN' || req.user.id === access.lecture.host_id);
+        const questions = (result.questions || []).map((q) => {
+          if (isTeacherOrAdmin) return q;
+          const { correct_answer, correctAnswer, explanation, ...safeQ } = q;
+          return safeQ;
+        });
+        res.json({ ...result, questions });
+      },
     });
-    res.json({ ...result, questions });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1023,9 +1207,13 @@ app.get('/api/lectures/:lectureId/quiz', aiLimiter, optionalAuth, async (req, re
 
 app.post('/api/lectures/:lectureId/quiz/submit', authenticateToken, async (req, res) => {
   try {
-    const { quizId, answers } = req.body;
-    const result = await submitQuizAttempt({ quizId, userId: req.user.id, answers });
-    res.json(result);
+    await forwardRequestToSpringBoot(req, res, `/api/lectures/${req.params.lectureId}/quiz/submit`, {
+      fallback: async () => {
+        const { quizId, answers } = req.body;
+        const result = await submitQuizAttempt({ quizId, userId: req.user.id, answers });
+        res.json(result);
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1036,8 +1224,12 @@ app.get('/api/lectures/:lectureId/flashcards', aiLimiter, optionalAuth, async (r
     const access = await checkLectureAccess(req.params.lectureId, req.user);
     if (!access.allowed) return res.status(access.status).json({ error: access.error });
 
-    const cards = await generateFlashcards(req.params.lectureId);
-    res.json({ flashcards: cards });
+    await forwardRequestToSpringBoot(req, res, `/api/lectures/${req.params.lectureId}/flashcards`, {
+      fallback: async () => {
+        const cards = await generateFlashcards(req.params.lectureId);
+        res.json({ flashcards: cards });
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1045,9 +1237,13 @@ app.get('/api/lectures/:lectureId/flashcards', aiLimiter, optionalAuth, async (r
 
 app.post('/api/lectures/:lectureId/flashcards/progress', authenticateToken, async (req, res) => {
   try {
-    const { flashcardId, status } = req.body;
-    const result = await updateFlashcardProgress({ flashcardId, userId: req.user.id, status });
-    res.json(result);
+    await forwardRequestToSpringBoot(req, res, `/api/lectures/${req.params.lectureId}/flashcards/progress`, {
+      fallback: async () => {
+        const { flashcardId, status } = req.body;
+        const result = await updateFlashcardProgress({ flashcardId, userId: req.user.id, status });
+        res.json(result);
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1060,8 +1256,13 @@ app.get('/api/lectures/:lectureId/pdf/transcript', aiLimiter, optionalAuth, asyn
     const access = await checkLectureAccess(req.params.lectureId, req.user);
     if (!access.allowed) return res.status(access.status).json({ error: access.error });
 
-    const { filePath, filename } = await generateTranscriptPdf(req.params.lectureId);
-    res.download(filePath, filename);
+    await forwardRequestToSpringBoot(req, res, `/api/lectures/${req.params.lectureId}/pdf/transcript`, {
+      binary: true,
+      fallback: async () => {
+        const { filePath, filename } = await generateTranscriptPdf(req.params.lectureId);
+        res.download(filePath, filename);
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1072,8 +1273,13 @@ app.get('/api/lectures/:lectureId/pdf/summary', aiLimiter, optionalAuth, async (
     const access = await checkLectureAccess(req.params.lectureId, req.user);
     if (!access.allowed) return res.status(access.status).json({ error: access.error });
 
-    const { filePath, filename } = await generateSummaryPdf(req.params.lectureId);
-    res.download(filePath, filename);
+    await forwardRequestToSpringBoot(req, res, `/api/lectures/${req.params.lectureId}/pdf/summary`, {
+      binary: true,
+      fallback: async () => {
+        const { filePath, filename } = await generateSummaryPdf(req.params.lectureId);
+        res.download(filePath, filename);
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1084,8 +1290,14 @@ app.get('/api/lectures/:lectureId/pdf/study-notes', aiLimiter, optionalAuth, asy
     const access = await checkLectureAccess(req.params.lectureId, req.user);
     if (!access.allowed) return res.status(access.status).json({ error: access.error });
 
-    const { filePath, filename } = await generateStudyNotesPdf(req.params.lectureId);
-    res.download(filePath, filename);
+    const mode = req.query.mode || 'detailed';
+    await forwardRequestToSpringBoot(req, res, `/api/lectures/${req.params.lectureId}/pdf/study-notes?mode=${mode}`, {
+      binary: true,
+      fallback: async () => {
+        const { filePath, filename } = await generateStudyNotesPdf(req.params.lectureId);
+        res.download(filePath, filename);
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -9,4 +9,6 @@ import java.util.Optional;
 @Repository
 public interface SummaryRepository extends JpaRepository<Summary, String> {
     Optional<Summary> findByLectureId(String lectureId);
+    void deleteByLectureId(String lectureId);
+    boolean existsByLectureId(String lectureId);
 }

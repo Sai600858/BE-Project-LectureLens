@@ -58,6 +58,10 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/transcript/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/lectures").hasRole("ADMIN")
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/lectures").hasAnyRole("TEACHER", "ADMIN")
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/lectures/*/quiz").hasAnyRole("TEACHER", "ADMIN")
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/lectures/*/quiz/submit").authenticated()
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/lectures/*/flashcards/progress").authenticated()
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/lectures/*/ask").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/lectures/*/board-frame", "/api/lectures/*/screen-frame", "/api/lectures/*/transcript-segment").permitAll()
                 .requestMatchers("/api/lectures/**").authenticated()
                 .requestMatchers("/h2-console/**").permitAll()
@@ -89,7 +93,13 @@ public class SecurityConfig {
             ));
         }
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Range"));
+        config.setAllowedHeaders(Arrays.asList(
+            "Authorization", "Content-Type", "Range", "X-Requested-With",
+            "X-Correlation-Id", "X-Forwarded-By", "Accept", "Origin"
+        ));
+        config.setExposedHeaders(Arrays.asList(
+            "Content-Disposition", "X-Correlation-Id", "X-Gateway-Processed", "X-Legacy-Fallback-Used"
+        ));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

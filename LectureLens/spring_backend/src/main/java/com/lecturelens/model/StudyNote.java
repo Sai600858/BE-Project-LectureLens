@@ -31,6 +31,12 @@ public class StudyNote {
     @Column(columnDefinition = "TEXT")
     private String questionsJson;
 
+    @Column(columnDefinition = "TEXT")
+    private String sectionsJson = "[]";
+
+    @Column(columnDefinition = "TEXT")
+    private String visualizationsJson = "[]";
+
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public StudyNote() {}
@@ -58,6 +64,12 @@ public class StudyNote {
 
     public String getQuestionsJson() { return questionsJson; }
     public void setQuestionsJson(String questionsJson) { this.questionsJson = questionsJson; }
+
+    public String getSectionsJson() { return sectionsJson; }
+    public void setSectionsJson(String sectionsJson) { this.sectionsJson = sectionsJson; }
+
+    public String getVisualizationsJson() { return visualizationsJson; }
+    public void setVisualizationsJson(String visualizationsJson) { this.visualizationsJson = visualizationsJson; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

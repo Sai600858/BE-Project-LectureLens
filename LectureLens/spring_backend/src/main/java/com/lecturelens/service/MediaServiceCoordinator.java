@@ -160,6 +160,30 @@ public class MediaServiceCoordinator {
         return sendNotification("/internal/media/notify/transcript", payload);
     }
 
+    public boolean notifySummaryGenerated(String roomId, String lectureId, Object summary) {
+        Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("roomId", roomId != null ? roomId : "");
+        payload.put("lectureId", lectureId != null ? lectureId : "");
+        payload.put("summary", summary != null ? summary : java.util.Map.of());
+        return sendNotification("/internal/media/notify/summary", payload);
+    }
+
+    public boolean notifyNotesGenerated(String roomId, String lectureId, Object notes) {
+        Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("roomId", roomId != null ? roomId : "");
+        payload.put("lectureId", lectureId != null ? lectureId : "");
+        payload.put("notes", notes != null ? notes : java.util.Map.of());
+        return sendNotification("/internal/media/notify/notes", payload);
+    }
+
+    public boolean notifyChaptersGenerated(String roomId, String lectureId, Object chapters) {
+        Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("roomId", roomId != null ? roomId : "");
+        payload.put("lectureId", lectureId != null ? lectureId : "");
+        payload.put("chapters", chapters != null ? chapters : java.util.List.of());
+        return sendNotification("/internal/media/notify/chapters", payload);
+    }
+
     private boolean sendNotification(String path, Map<String, Object> payload) {
         String targetUrl = mediaServiceUrl + path;
         long timestamp = System.currentTimeMillis();

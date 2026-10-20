@@ -10,5 +10,6 @@ import java.util.Optional;
 @Repository
 public interface SalkgGuardReportRepository extends JpaRepository<SalkgGuardReport, String> {
     List<SalkgGuardReport> findByLectureIdOrderByCreatedAtDesc(String lectureId);
+
     Optional<SalkgGuardReport> findByIdAndLectureId(String id, String lectureId);
 }

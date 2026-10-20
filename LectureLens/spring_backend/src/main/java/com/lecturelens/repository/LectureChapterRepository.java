@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface LectureChapterRepository extends JpaRepository<LectureChapter, String> {
     List<LectureChapter> findByLectureIdOrderByStartTimeAsc(String lectureId);
+    void deleteByLectureId(String lectureId);
+    long countByLectureId(String lectureId);
 }

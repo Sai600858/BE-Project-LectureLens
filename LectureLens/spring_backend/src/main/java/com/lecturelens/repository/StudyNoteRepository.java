@@ -11,4 +11,6 @@ import java.util.Optional;
 public interface StudyNoteRepository extends JpaRepository<StudyNote, String> {
     Optional<StudyNote> findByLectureIdAndMode(String lectureId, String mode);
     List<StudyNote> findByLectureId(String lectureId);
+    void deleteByLectureIdAndMode(String lectureId, String mode);
+    boolean existsByLectureIdAndMode(String lectureId, String mode);
 }

@@ -43,6 +43,22 @@ public class JwtUtils {
         return generateToken(userId, email, "", role);
     }
 
+    public String generateExpiredToken(String userId, String email, String name, String role) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() - 3600000); // Expired 1 hour ago
+
+        return Jwts.builder()
+                .setSubject(userId)
+                .claim("id", userId)
+                .claim("email", email)
+                .claim("name", name != null ? name : "")
+                .claim("role", role)
+                .setIssuedAt(new Date(now.getTime() - 7200000))
+                .setExpiration(expiryDate)
+                .signWith(getSignKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
     public Claims getAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSignKey())

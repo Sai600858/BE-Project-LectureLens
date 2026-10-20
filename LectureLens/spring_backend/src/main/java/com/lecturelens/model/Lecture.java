@@ -68,6 +68,14 @@ public class Lecture {
     public User getHost() { return host; }
     public void setHost(User host) { this.host = host; }
 
+    public String getHostId() {
+        return host != null ? host.getId() : null;
+    }
+
+    public String getHostName() {
+        return host != null ? host.getName() : null;
+    }
+
     public LocalDateTime getScheduledAt() { return scheduledAt; }
     public void setScheduledAt(LocalDateTime scheduledAt) { this.scheduledAt = scheduledAt; }
 
