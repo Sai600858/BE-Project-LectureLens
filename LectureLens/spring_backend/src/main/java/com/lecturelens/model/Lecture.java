@@ -33,6 +33,10 @@ public class Lecture {
 
     private String visibility = "PUBLIC";
     private String passwordHash;
+    private String subject = "";
+
+    @Column(columnDefinition = "TEXT")
+    private String domainContextJson = "{}";
 
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -70,6 +74,12 @@ public class Lecture {
 
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+
+    public String getSubject() { return subject; }
+    public void setSubject(String subject) { this.subject = subject; }
+
+    public String getDomainContextJson() { return domainContextJson; }
+    public void setDomainContextJson(String domainContextJson) { this.domainContextJson = domainContextJson; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
