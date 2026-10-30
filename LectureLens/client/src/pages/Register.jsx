@@ -24,8 +24,8 @@ export default function Register() {
       setError('Please fill in all required fields.');
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long.');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long.');
       return;
     }
 
@@ -162,7 +162,7 @@ export default function Register() {
                     id="register-password"
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
-                    placeholder="Create a strong password (min 6 chars)"
+                    placeholder="Create a strong password (min 8 chars)"
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);

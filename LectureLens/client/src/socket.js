@@ -7,17 +7,27 @@ const socket = io('/', {
   reconnection: true,
   reconnectionAttempts: 10,
   reconnectionDelay: 1000,
-  auth: {
-    token: localStorage.getItem('lecturelens_token') || '',
+  auth: (cb) => {
+    cb({
+      token: (typeof window !== 'undefined' ? localStorage.getItem('lecturelens_token') : '') || '',
+    });
   },
 });
 
 // Keep auth token fresh on reconnect (e.g. after login/page refresh)
 socket.on('connect', () => {
-  const token = localStorage.getItem('lecturelens_token');
-  if (token && socket.auth) {
-    socket.auth.token = token;
+  const token = typeof window !== 'undefined' ? localStorage.getItem('lecturelens_token') : '';
+  if (socket.auth) {
+    socket.auth.token = token || '';
   }
 });
+
+export function refreshSocketAuth() {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('lecturelens_token') : '';
+  socket.auth = { token: token || '' };
+  if (socket.connected) {
+    socket.disconnect().connect();
+  }
+}
 
 export default socket;

@@ -253,6 +253,9 @@ export function useMediasoup({ roomId: roomIdParam, role, lectureTitle = 'Live L
     setError(null);
 
     try {
+      const currentToken = (typeof window !== 'undefined' ? localStorage.getItem('lecturelens_token') : '') || '';
+      socket.auth = { token: currentToken };
+
       if (!socket.connected) {
         socket.connect();
         await new Promise((resolve, reject) => {
@@ -268,6 +271,7 @@ export function useMediasoup({ roomId: roomIdParam, role, lectureTitle = 'Live L
         const res = await emit('createRoom', {
           roomId: sanitizedInitialRoom || undefined,
           title: lectureTitle,
+          token: currentToken || undefined,
         });
         if (res?.error) throw new Error(res.error);
         if (!res?.roomId) throw new Error('Failed to obtain room ID from server');
@@ -284,7 +288,10 @@ export function useMediasoup({ roomId: roomIdParam, role, lectureTitle = 'Live L
         if (!joinTarget || joinTarget === 'UNDEFINED' || joinTarget === 'NULL') {
           throw new Error('Please enter a valid 8-digit Room Code to join.');
         }
-        const res = await emit('joinRoom', { roomId: joinTarget });
+        const res = await emit('joinRoom', {
+          roomId: joinTarget,
+          token: currentToken || undefined,
+        });
         if (res.error) throw new Error(res.error);
         rtpCapabilities = res.rtpCapabilities;
         resolvedRoomId = (res.roomId || joinTarget).toUpperCase();

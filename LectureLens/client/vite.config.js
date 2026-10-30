@@ -26,4 +26,22 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/three/')) {
+            return 'vendor-three';
+          }
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/react-router-dom/')) {
+            return 'vendor-react';
+          }
+          if (id.includes('node_modules/mediasoup-client/') || id.includes('node_modules/socket.io-client/')) {
+            return 'vendor-media';
+          }
+        },
+      },
+    },
+    chunkSizeWarningLimit: 800,
+  },
 });

@@ -8,6 +8,8 @@ package-lock.json.backup
 .env.local
 .env.*.local
 *.env
+!.env.example
+!*.env.example
 
 # Database files & SQLite
 data/

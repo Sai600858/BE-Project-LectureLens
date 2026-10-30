@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import Badge from '../Badge';
 import Button from '../Button';
+import { isWebGLAvailable } from '../../utils/webglSupport';
 
 const NODE_COUNT = 5;
 const RADIUS = 4.2;
@@ -13,6 +14,7 @@ export default function DistributedConsensus3D() {
   const reqIdRef = useRef(null);
   const nodeMeshesRef = useRef([]);
   const packetsRef = useRef([]);
+  const timeoutsRef = useRef([]);
 
   // Cluster State
   const [nodes, setNodes] = useState([
@@ -24,9 +26,11 @@ export default function DistributedConsensus3D() {
   ]);
   const [term, setTerm] = useState(1);
   const [logEntries, setLogEntries] = useState(['SET x=1', 'SET y=2', 'SET z=3']);
+  const [uncommittedEntries, setUncommittedEntries] = useState([]);
   const [actionLog, setActionLog] = useState('Cluster initialized in Term 1 with Node 1 as Leader.');
   const [isAnimating, setIsAnimating] = useState(false);
   const [showTextAlt, setShowTextAlt] = useState(false);
+  const [webglSupported, setWebglSupported] = useState(true);
 
   // Colors
   const ROLE_COLORS = {
@@ -36,65 +40,119 @@ export default function DistributedConsensus3D() {
     OFFLINE: 0x475569,   // Slate gray
   };
 
-  // Helper to create a text sprite for labels
-  const createTextSprite = (text, color = '#ffffff') => {
+  // Safe timer helper
+  const addTimeout = (fn, delay) => {
+    const id = setTimeout(fn, delay);
+    timeoutsRef.current.push(id);
+    return id;
+  };
+
+  // Helper to create or update a text sprite for labels
+  const createTextSprite = (text, roleText = '', color = '#ffffff') => {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
     canvas.height = 128;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-    ctx.roundRect ? ctx.roundRect(10, 10, 236, 108, 16) : ctx.rect(10, 10, 236, 108);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    if (ctx.roundRect) ctx.roundRect(8, 8, 240, 112, 16);
+    else ctx.rect(8, 8, 240, 112);
     ctx.fill();
     ctx.strokeStyle = color;
     ctx.lineWidth = 4;
     ctx.stroke();
 
-    ctx.fillStyle = color;
-    ctx.font = 'bold 36px sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 34px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, 128, 64);
+    ctx.fillText(text, 128, 48);
+
+    if (roleText) {
+      ctx.fillStyle = color;
+      ctx.font = 'bold 22px monospace';
+      ctx.fillText(roleText, 128, 88);
+    }
 
     const texture = new THREE.CanvasTexture(canvas);
     const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
     const sprite = new THREE.Sprite(spriteMat);
-    sprite.scale.set(1.8, 0.9, 1);
+    sprite.scale.set(1.9, 0.95, 1);
+    sprite.userData = { texture };
     return sprite;
+  };
+
+  // Update existing node sprite text without memory leak
+  const updateNodeSprite = (item, node) => {
+    if (!item || !item.label) return;
+    const roleLabel = !node.online
+      ? 'DEAD'
+      : node.role === 'LEADER'
+      ? `LEADER T${node.term}`
+      : node.role === 'CANDIDATE'
+      ? `CAND T${node.term}`
+      : `FOLL T${node.term}`;
+
+    const colorHex = !node.online
+      ? '#64748b'
+      : node.role === 'LEADER'
+      ? '#10b981'
+      : node.role === 'CANDIDATE'
+      ? '#f59e0b'
+      : '#38bdf8';
+
+    // Dispose old texture
+    if (item.label.userData && item.label.userData.texture) {
+      item.label.userData.texture.dispose();
+    }
+    item.group.remove(item.label);
+    item.label.material.dispose();
+
+    const newSprite = createTextSprite(`N${node.id}`, roleLabel, colorHex);
+    newSprite.position.set(0, 1.3, 0);
+    item.group.add(newSprite);
+    item.label = newSprite;
   };
 
   // Three.js Scene Setup
   useEffect(() => {
+    if (!isWebGLAvailable()) {
+      setWebglSupported(false);
+      return;
+    }
+
     const container = mountRef.current;
     if (!container) return;
 
     const width = container.clientWidth || 800;
     const height = container.clientHeight || 450;
 
-    // Scene
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      rendererRef.current = renderer;
+      container.appendChild(renderer.domElement);
+    } catch (err) {
+      console.warn('WebGL init failed:', err);
+      setWebglSupported(false);
+      return;
+    }
+
     const scene = new THREE.Scene();
     sceneRef.current = scene;
     scene.background = new THREE.Color(0x060911);
 
-    // Camera
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
     camera.position.set(0, 8.5, 9.5);
     camera.lookAt(0, 0, 0);
 
-    // Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    rendererRef.current = renderer;
-    container.appendChild(renderer.domElement);
-
-    // Lights
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
     dirLight.position.set(5, 10, 7);
     scene.add(dirLight);
 
-    // Connecting Network Ring
     const ringGeo = new THREE.RingGeometry(RADIUS - 0.05, RADIUS + 0.05, 64);
     const ringMat = new THREE.MeshBasicMaterial({ color: 0x1e293b, side: THREE.DoubleSide });
     const ringMesh = new THREE.Mesh(ringGeo, ringMat);
@@ -111,7 +169,6 @@ export default function DistributedConsensus3D() {
       const group = new THREE.Group();
       group.position.set(x, 0, z);
 
-      // Sphere
       const sphereGeo = new THREE.SphereGeometry(0.7, 32, 32);
       const sphereMat = new THREE.MeshStandardMaterial({
         color: i === 0 ? ROLE_COLORS.LEADER : ROLE_COLORS.FOLLOWER,
@@ -123,17 +180,15 @@ export default function DistributedConsensus3D() {
       const sphere = new THREE.Mesh(sphereGeo, sphereMat);
       group.add(sphere);
 
-      // Label sprite
-      const label = createTextSprite(`N${i + 1}`, i === 0 ? '#10b981' : '#38bdf8');
-      label.position.set(0, 1.2, 0);
+      const label = createTextSprite(`N${i + 1}`, i === 0 ? 'LEADER T1' : 'FOLL T1', i === 0 ? '#10b981' : '#38bdf8');
+      label.position.set(0, 1.3, 0);
       group.add(label);
 
       scene.add(group);
       nodeMeshesRef.current.push({ group, sphere, label, index: i });
     }
 
-    // Animation Loop
-    let angle = 0;
+    let rotAngle = 0;
     const animate = () => {
       reqIdRef.current = requestAnimationFrame(animate);
 
@@ -149,27 +204,26 @@ export default function DistributedConsensus3D() {
           packets.splice(i, 1);
         } else {
           p.mesh.position.lerpVectors(p.fromPos, p.toPos, p.progress);
-          // slight arc in height
           p.mesh.position.y = Math.sin(p.progress * Math.PI) * 1.2;
         }
       }
 
-      // Gentle cluster rotation when idle
-      angle += 0.0015;
-      scene.rotation.y = Math.sin(angle) * 0.15;
+      rotAngle += 0.0015;
+      scene.rotation.y = Math.sin(rotAngle) * 0.12;
 
       renderer.render(scene, camera);
     };
     animate();
 
-    // Resize Handler
     const handleResize = () => {
       if (!container || !renderer) return;
       const w = container.clientWidth;
       const h = container.clientHeight || 450;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
+      if (w > 0 && h > 0) {
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
     };
     const ro = new ResizeObserver(handleResize);
     ro.observe(container);
@@ -177,22 +231,36 @@ export default function DistributedConsensus3D() {
     return () => {
       if (reqIdRef.current) cancelAnimationFrame(reqIdRef.current);
       ro.disconnect();
+      timeoutsRef.current.forEach(clearTimeout);
+
+      // Clean up packets
+      packetsRef.current.forEach((p) => {
+        scene.remove(p.mesh);
+        p.mesh.geometry.dispose();
+        p.mesh.material.dispose();
+      });
+      packetsRef.current = [];
+
+      // Clean up nodes and label textures
+      nodeMeshesRef.current.forEach((item) => {
+        if (item.label?.userData?.texture) item.label.userData.texture.dispose();
+        if (item.label?.material) item.label.material.dispose();
+        if (item.sphere?.geometry) item.sphere.geometry.dispose();
+        if (item.sphere?.material) item.sphere.material.dispose();
+      });
+      nodeMeshesRef.current = [];
+
+      ringGeo.dispose();
+      ringMat.dispose();
+
       if (renderer.domElement && container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
       renderer.dispose();
-      // Dispose meshes
-      scene.traverse((obj) => {
-        if (obj.geometry) obj.geometry.dispose();
-        if (obj.material) {
-          if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose());
-          else obj.material.dispose();
-        }
-      });
     };
   }, []);
 
-  // Sync 3D Visual Mesh Colors when state changes
+  // Sync 3D Visual Mesh Colors and Text Sprites when state changes
   useEffect(() => {
     if (!nodeMeshesRef.current || nodeMeshesRef.current.length === 0) return;
 
@@ -206,8 +274,12 @@ export default function DistributedConsensus3D() {
 
       item.sphere.material.color.setHex(color);
       item.sphere.material.emissive.setHex(color);
-      item.sphere.material.emissiveIntensity = node.role === 'LEADER' ? 0.45 : node.role === 'CANDIDATE' ? 0.35 : 0.15;
+      item.sphere.material.emissiveIntensity =
+        node.role === 'LEADER' ? 0.45 : node.role === 'CANDIDATE' ? 0.35 : 0.15;
       item.sphere.scale.setScalar(node.role === 'LEADER' ? 1.15 : 1.0);
+
+      // Update 3D label
+      updateNodeSprite(item, node);
     });
   }, [nodes]);
 
@@ -228,62 +300,114 @@ export default function DistributedConsensus3D() {
 
   // Action 1: Trigger Leader Election
   const triggerElection = useCallback(() => {
+    if (isAnimating) return;
     const onlineNodes = nodes.filter((n) => n.online);
     if (onlineNodes.length < 3) {
       setActionLog('⚠️ Quorum impossible: fewer than 3 nodes are online (need 3/5 majority). Election aborted.');
       return;
     }
 
-    // Pick first non-leader online node or node 2 to be candidate
+    // Pick candidate: prefer an online non-leader, else first online node
     const candidate = onlineNodes.find((n) => n.role !== 'LEADER') || onlineNodes[0];
     const candidateIdx = candidate.id - 1;
-    const newTerm = term + 1;
-    setTerm(newTerm);
+    const nextTerm = term + 1;
+    setTerm(nextTerm);
     setIsAnimating(true);
 
-    setActionLog(`Node ${candidate.id} election timeout fired! Incrementing to Term ${newTerm}, becoming CANDIDATE, and requesting votes...`);
+    setActionLog(`Node ${candidate.id} election timeout fired! Advancing to Term ${nextTerm}, becoming CANDIDATE, and requesting votes...`);
 
-    // Transition to Candidate
+    // Transition to Candidate (votes for itself)
     setNodes((prev) =>
-      prev.map((n) => (n.id === candidate.id ? { ...n, role: 'CANDIDATE', term: newTerm, votedFor: n.id } : n))
+      prev.map((n) => (n.id === candidate.id ? { ...n, role: 'CANDIDATE', term: nextTerm, votedFor: n.id } : n))
     );
 
-    // Send RequestVote packets to all other online nodes
+    // Broadcast RequestVote packets (amber)
     onlineNodes.forEach((n) => {
       if (n.id !== candidate.id) {
         spawnPacket(candidateIdx, n.id - 1, 0xf59e0b);
       }
     });
 
-    // Receive votes after latency
-    setTimeout(() => {
-      const votesReceived = onlineNodes.length; // all online grant vote in this simplified demo
-      if (votesReceived >= 3) {
-        // Elect Leader
-        setNodes((prev) =>
-          prev.map((n) => {
-            if (n.id === candidate.id) {
-              return { ...n, role: 'LEADER', term: newTerm };
+    // Follower voting evaluation
+    addTimeout(() => {
+      // Each online node grants vote if it hasn't voted for someone else in this term
+      let votesGranted = 1; // Self vote
+      const voters = [candidate.id];
+
+      onlineNodes.forEach((n) => {
+        if (n.id !== candidate.id) {
+          // In standard Raft, online follower grants vote to first candidate of new term
+          votesGranted++;
+          voters.push(n.id);
+          spawnPacket(n.id - 1, candidateIdx, 0x10b981); // Vote grant ACK
+        }
+      });
+
+      addTimeout(() => {
+        if (votesGranted >= 3) {
+          // Majority achieved -> Become Leader
+          setNodes((prev) =>
+            prev.map((n) => {
+              if (n.id === candidate.id) {
+                return { ...n, role: 'LEADER', term: nextTerm, votedFor: candidate.id };
+              }
+              return n.online
+                ? { ...n, role: 'FOLLOWER', term: nextTerm, votedFor: candidate.id }
+                : n;
+            })
+          );
+          setActionLog(
+            `✨ Node ${candidate.id} won majority (${votesGranted}/5 votes from Nodes ${voters.join(', ')}). Elected LEADER for Term ${nextTerm}! Sending initial heartbeats.`
+          );
+
+          // Broadcast initial heartbeats from new leader
+          onlineNodes.forEach((n) => {
+            if (n.id !== candidate.id) {
+              spawnPacket(candidateIdx, n.id - 1, 0x10b981);
             }
-            return n.online ? { ...n, role: 'FOLLOWER', term: newTerm, votedFor: candidate.id } : n;
-          })
-        );
-        setActionLog(`✨ Node ${candidate.id} won majority (${votesReceived}/5 votes). Transitioned to LEADER for Term ${newTerm}! Sending initial heartbeats.`);
+          });
+        } else {
+          // Split vote / no quorum
+          setNodes((prev) =>
+            prev.map((n) => (n.id === candidate.id ? { ...n, role: 'FOLLOWER', term: nextTerm } : n))
+          );
+          setActionLog(`❌ Node ${candidate.id} received only ${votesGranted}/5 votes. Election failed (no majority).`);
+        }
+        setIsAnimating(false);
+      }, 700);
+    }, 700);
+  }, [nodes, term, isAnimating]);
 
-        // Broadcast initial heartbeats from new leader
-        onlineNodes.forEach((n) => {
-          if (n.id !== candidate.id) {
-            spawnPacket(candidateIdx, n.id - 1, 0x10b981);
-          }
-        });
-      } else {
-        setActionLog(`❌ Node ${candidate.id} received only ${votesReceived} votes. Election failed (split vote).`);
-      }
+  // Action 2: Send Heartbeats (Leader Maintenance)
+  const sendHeartbeats = useCallback(() => {
+    if (isAnimating) return;
+    const leader = nodes.find((n) => n.role === 'LEADER' && n.online);
+    if (!leader) {
+      setActionLog('⚠️ Cannot send heartbeat: no online leader in the cluster. Trigger an election first.');
+      return;
+    }
+
+    const leaderIdx = leader.id - 1;
+    const onlineFollowers = nodes.filter((n) => n.online && n.id !== leader.id);
+
+    setIsAnimating(true);
+    setActionLog(`Leader Node ${leader.id} broadcasting heartbeats (AppendEntries RPC) to ${onlineFollowers.length} online followers...`);
+
+    onlineFollowers.forEach((f) => {
+      spawnPacket(leaderIdx, f.id - 1, 0x10b981);
+    });
+
+    addTimeout(() => {
+      // Followers reset election timers and confirm term
+      setNodes((prev) =>
+        prev.map((n) => (n.online && n.id !== leader.id ? { ...n, term: leader.term, votedFor: leader.id } : n))
+      );
+      setActionLog(`💓 Heartbeat cycle complete: ${onlineFollowers.length} followers refreshed lease with Leader Node ${leader.id} in Term ${leader.term}.`);
       setIsAnimating(false);
-    }, 1200);
-  }, [nodes, term]);
+    }, 600);
+  }, [nodes, isAnimating]);
 
-  // Action 2: Toggle Node Crash / Partition
+  // Action 3: Toggle Node Crash / Partition
   const toggleNodeOnline = (nodeId) => {
     setNodes((prev) => {
       const updated = prev.map((n) => {
@@ -302,28 +426,31 @@ export default function DistributedConsensus3D() {
       const leader = updated.find((x) => x.role === 'LEADER' && x.online);
 
       if (!leader && onlineCount >= 3) {
-        setActionLog(`⚠️ Leader (Node ${nodeId}) crashed! Remaining ${onlineCount} followers detect missing heartbeats. You can trigger a new election.`);
+        setActionLog(`⚠️ Leader (Node ${nodeId}) crashed! Remaining ${onlineCount} followers detect missing heartbeats. Trigger an election to establish new leader.`);
       } else if (onlineCount < 3) {
-        setActionLog(`🚨 Critical: only ${onlineCount}/5 nodes online. Quorum lost! Cluster paused.`);
+        setActionLog(`🚨 Critical: only ${onlineCount}/5 nodes online. Quorum lost! Cluster paused to prevent split-brain.`);
       } else {
-        setActionLog(`Node ${nodeId} is now ${updated.find((x) => x.id === nodeId).online ? 'ONLINE' : 'OFFLINE'}. (${onlineCount}/5 online)`);
+        const target = updated.find((x) => x.id === nodeId);
+        setActionLog(`Node ${nodeId} is now ${target.online ? 'ONLINE' : 'OFFLINE'}. (${onlineCount}/5 online${onlineCount >= 3 ? ' - Quorum healthy' : ''})`);
       }
 
       return updated;
     });
   };
 
-  // Action 3: Propose Log Entry & Replicate
+  // Action 4: Propose Log Entry & Replicate
   const proposeLogEntry = () => {
+    if (isAnimating) return;
     const leader = nodes.find((n) => n.role === 'LEADER' && n.online);
     if (!leader) {
       setActionLog('⚠️ Cannot propose log entry: no active online leader in the cluster.');
       return;
     }
     const onlineFollowers = nodes.filter((n) => n.online && n.id !== leader.id);
-    const newEntry = `SET key_${logEntries.length + 1}=${Math.floor(Math.random() * 100)}`;
+    const newEntry = `SET key_${logEntries.length + uncommittedEntries.length + 1}=${Math.floor(Math.random() * 100)}`;
     const leaderIdx = leader.id - 1;
 
+    setIsAnimating(true);
     setActionLog(`Leader Node ${leader.id} proposing entry "${newEntry}". Replicating AppendEntries to online followers...`);
 
     // Broadcast log entry packets
@@ -331,13 +458,13 @@ export default function DistributedConsensus3D() {
       spawnPacket(leaderIdx, f.id - 1, 0x38bdf8);
     });
 
-    setTimeout(() => {
+    addTimeout(() => {
       // Follower ACKs returned to leader
       onlineFollowers.forEach((f) => {
         spawnPacket(f.id - 1, leaderIdx, 0x10b981);
       });
 
-      setTimeout(() => {
+      addTimeout(() => {
         const totalReplicated = 1 + onlineFollowers.length;
         if (totalReplicated >= 3) {
           setLogEntries((prev) => [...prev, newEntry]);
@@ -346,14 +473,18 @@ export default function DistributedConsensus3D() {
           );
           setActionLog(`✅ Entry "${newEntry}" committed to majority (${totalReplicated}/5 nodes). Safe to apply to state machine.`);
         } else {
-          setActionLog(`⚠️ Failed to replicate to quorum (${totalReplicated}/5). Entry not committed.`);
+          setUncommittedEntries((prev) => [...prev, newEntry]);
+          setActionLog(`⚠️ Entry "${newEntry}" uncommitted: replicated to only ${totalReplicated}/5 nodes (quorum requires 3). Waiting for recovery.`);
         }
+        setIsAnimating(false);
       }, 700);
     }, 700);
   };
 
-  // Action 4: Reset Cluster
+  // Action 5: Reset Cluster
   const resetCluster = () => {
+    timeoutsRef.current.forEach(clearTimeout);
+    timeoutsRef.current = [];
     setTerm(1);
     setNodes([
       { id: 1, role: 'LEADER', term: 1, votedFor: 1, logCount: 3, online: true },
@@ -363,6 +494,8 @@ export default function DistributedConsensus3D() {
       { id: 5, role: 'FOLLOWER', term: 1, votedFor: 1, logCount: 3, online: true },
     ]);
     setLogEntries(['SET x=1', 'SET y=2', 'SET z=3']);
+    setUncommittedEntries([]);
+    setIsAnimating(false);
     setActionLog('Cluster reset to default 5-node configuration with Node 1 as Leader.');
   };
 
@@ -371,42 +504,53 @@ export default function DistributedConsensus3D() {
 
   return (
     <div style={styles.container}>
-      {/* 3D Visualizer Canvas */}
-      <div style={styles.canvasWrapper} ref={mountRef}>
-        {/* Floating In-Scene Legend */}
-        <div style={styles.sceneOverlay}>
-          <div style={styles.clusterStatusBadge}>
-            <span style={{ fontSize: '13px' }}>Cluster Term: <strong>{term}</strong></span>
-            <span style={{ color: '#94a3b8' }}>•</span>
-            <span style={{ fontSize: '13px' }}>
-              Online: <strong>{onlineCount}/5</strong> {onlineCount >= 3 ? '✅ Quorum' : '❌ No Quorum'}
-            </span>
-            <span style={{ color: '#94a3b8' }}>•</span>
-            <Badge variant={currentLeader ? 'emerald' : 'rose'} size="sm">
-              {currentLeader ? `Leader: Node ${currentLeader.id}` : 'No Leader'}
-            </Badge>
-          </div>
+      {/* 3D Visualizer Canvas or WebGL fallback */}
+      {webglSupported ? (
+        <div style={styles.canvasWrapper} ref={mountRef}>
+          <div style={styles.sceneOverlay}>
+            <div style={styles.clusterStatusBadge}>
+              <span style={{ fontSize: '13px' }}>Cluster Term: <strong>{term}</strong></span>
+              <span style={{ color: '#94a3b8' }}>•</span>
+              <span style={{ fontSize: '13px' }}>
+                Online: <strong>{onlineCount}/5</strong> {onlineCount >= 3 ? '✅ Quorum' : '❌ No Quorum'}
+              </span>
+              <span style={{ color: '#94a3b8' }}>•</span>
+              <Badge variant={currentLeader ? 'emerald' : 'rose'} size="sm">
+                {currentLeader ? `Leader: Node ${currentLeader.id}` : 'No Leader'}
+              </Badge>
+            </div>
 
-          <div style={styles.legendRow}>
-            <div style={styles.legendItem}>
-              <span style={{ ...styles.legendDot, background: '#10b981' }} />
-              <span>Leader</span>
-            </div>
-            <div style={styles.legendItem}>
-              <span style={{ ...styles.legendDot, background: '#38bdf8' }} />
-              <span>Follower</span>
-            </div>
-            <div style={styles.legendItem}>
-              <span style={{ ...styles.legendDot, background: '#f59e0b' }} />
-              <span>Candidate</span>
-            </div>
-            <div style={styles.legendItem}>
-              <span style={{ ...styles.legendDot, background: '#64748b' }} />
-              <span>Offline</span>
+            <div style={styles.legendRow}>
+              <div style={styles.legendItem}>
+                <span style={{ ...styles.legendDot, background: '#10b981' }} />
+                <span>Leader</span>
+              </div>
+              <div style={styles.legendItem}>
+                <span style={{ ...styles.legendDot, background: '#38bdf8' }} />
+                <span>Follower</span>
+              </div>
+              <div style={styles.legendItem}>
+                <span style={{ ...styles.legendDot, background: '#f59e0b' }} />
+                <span>Candidate</span>
+              </div>
+              <div style={styles.legendItem}>
+                <span style={{ ...styles.legendDot, background: '#64748b' }} />
+                <span>Offline</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div style={styles.fallbackNotice}>
+          <span style={{ fontSize: '24px' }}>⚠️</span>
+          <div>
+            <strong>WebGL Acceleration Unavailable</strong>
+            <p style={{ margin: '4px 0 0', fontSize: '12.5px', color: '#cbd5e1' }}>
+              The 3D canvas is disabled in this environment. The cluster state, quorum arithmetic, and message protocols are fully interactive through the state table below.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Action Event Callout Banner */}
       <div style={styles.actionBanner} role="status" aria-live="polite">
@@ -425,6 +569,16 @@ export default function DistributedConsensus3D() {
             icon="⚡"
           >
             Trigger Leader Election
+          </Button>
+
+          <Button
+            onClick={sendHeartbeats}
+            disabled={!currentLeader || isAnimating}
+            variant="outline"
+            size="sm"
+            icon="💓"
+          >
+            Send Heartbeat
           </Button>
 
           <Button
@@ -473,7 +627,7 @@ export default function DistributedConsensus3D() {
       </div>
 
       {/* Accessible Text Alternative & Algorithm Explanation */}
-      {showTextAlt && (
+      {(showTextAlt || !webglSupported) && (
         <div style={styles.textAltSection}>
           <h4 style={styles.textAltTitle}>Cluster Consensus State Table</h4>
           <div style={{ overflowX: 'auto' }}>
@@ -549,6 +703,16 @@ const styles = {
     border: '1px solid rgba(255, 255, 255, 0.08)',
     boxShadow: '0 8px 32px rgba(0, 0, 0, 0.45)',
   },
+  fallbackNotice: {
+    background: 'rgba(15, 23, 42, 0.85)',
+    border: '1px solid rgba(245, 158, 11, 0.3)',
+    borderRadius: '14px',
+    padding: '20px',
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '12px',
+    color: '#fef3c7',
+  },
   sceneOverlay: {
     position: 'absolute',
     top: '14px',
@@ -598,69 +762,66 @@ const styles = {
     display: 'inline-block',
   },
   actionBanner: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    background: 'rgba(15, 23, 42, 0.8)',
+    background: 'linear-gradient(90deg, rgba(2, 132, 199, 0.15) 0%, rgba(15, 23, 42, 0.6) 100%)',
     border: '1px solid rgba(56, 189, 248, 0.25)',
     borderRadius: '10px',
     padding: '10px 16px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
   },
   controlsBar: {
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: '12px',
-    background: 'rgba(15, 23, 42, 0.7)',
+    background: 'rgba(15, 23, 42, 0.65)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '12px',
-    padding: '14px',
+    padding: '12px 16px',
   },
   controlGroup: {
     display: 'flex',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: '8px',
-    flexWrap: 'wrap',
   },
   partitionGroup: {
     display: 'flex',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: '6px',
-    flexWrap: 'wrap',
   },
   partitionLabel: {
-    fontSize: '12px',
+    fontSize: '11px',
     color: '#94a3b8',
-    fontWeight: '600',
-    marginRight: '4px',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    marginRight: '2px',
   },
   nodeToggleBtn: {
-    border: '1px solid',
-    borderRadius: '8px',
-    padding: '6px 10px',
+    padding: '5px 9px',
+    borderRadius: '6px',
     fontSize: '11.5px',
     fontWeight: '700',
+    border: '1px solid',
     cursor: 'pointer',
-    minHeight: '44px',
-    minWidth: '72px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'all 0.2s',
+    transition: 'all 0.15s ease',
   },
   textAltToggleBtn: {
     background: 'transparent',
-    border: '1px dashed rgba(255, 255, 255, 0.2)',
-    color: '#94a3b8',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: '8px',
-    padding: '8px 14px',
+    padding: '6px 12px',
+    color: '#94a3b8',
     fontSize: '12px',
+    fontWeight: '600',
     cursor: 'pointer',
-    minHeight: '44px',
   },
   textAltSection: {
-    background: 'rgba(15, 23, 42, 0.85)',
+    background: 'rgba(15, 23, 42, 0.8)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '14px',
     padding: '20px',
@@ -669,34 +830,35 @@ const styles = {
     gap: '16px',
   },
   textAltTitle: {
+    margin: 0,
     fontSize: '15px',
     fontWeight: '700',
     color: '#ffffff',
-    margin: 0,
   },
   stateTable: {
     width: '100%',
     borderCollapse: 'collapse',
-    fontSize: '13px',
+    fontSize: '12.5px',
   },
   th: {
     textAlign: 'left',
-    padding: '10px 12px',
+    padding: '8px 12px',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
     color: '#94a3b8',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-    fontWeight: '700',
-    fontSize: '12px',
+    fontWeight: '600',
+    fontSize: '11.5px',
     textTransform: 'uppercase',
+    letterSpacing: '0.04em',
   },
   td: {
     padding: '10px 12px',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-    color: '#e2e8f0',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+    color: '#cbd5e1',
   },
   theoryBox: {
-    background: 'rgba(8, 12, 20, 0.7)',
-    borderLeft: '3px solid #38bdf8',
-    borderRadius: '8px',
-    padding: '12px 16px',
+    background: 'rgba(2, 132, 199, 0.08)',
+    border: '1px solid rgba(56, 189, 248, 0.2)',
+    borderRadius: '10px',
+    padding: '14px',
   },
 };

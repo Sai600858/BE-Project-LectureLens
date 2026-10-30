@@ -4,7 +4,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test test/visualization.test.js test/security_audit.test.js test/gemini_rotation.test.js",
+    "test": "node --test test/visualization.test.js test/security_audit.test.js test/gemini_rotation.test.js test/lecture_visualization.test.js",
     "dev": "nodemon src/server.js",
     "stt": "node src/unifiedSttServer.js",
     "llm-server": "node src/unifiedSttServer.js",

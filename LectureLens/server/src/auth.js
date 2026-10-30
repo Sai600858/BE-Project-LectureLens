@@ -89,8 +89,8 @@ function requireRole(...allowedRoles) {
 
 /**
  * Register a new user
- * Only ADMIN users can register TEACHER or ADMIN accounts.
- * Public registration is restricted to STUDENT accounts.
+ * Only ADMIN users can register ADMIN accounts.
+ * Public registration is permitted for STUDENT and TEACHER accounts.
  */
 async function registerUser({ name, email, password, role = 'STUDENT' }, requesterUser = null) {
   if (!name || !name.trim()) {
@@ -120,13 +120,17 @@ async function registerUser({ name, email, password, role = 'STUDENT' }, request
   }
 
   // Privilege escalation prevention:
-  // Non-ADMIN callers (or unauthenticated public registrations) cannot assign TEACHER or ADMIN roles
+  // Non-ADMIN callers (or unauthenticated public registrations) cannot assign ADMIN role
   let finalRole = 'STUDENT';
-  if (requestedRole === 'ADMIN' || requestedRole === 'TEACHER') {
+  if (requestedRole === 'ADMIN') {
     if (!requesterUser || requesterUser.role !== 'ADMIN') {
-      throw new Error(`Privilege escalation prevented: only administrators can create ${requestedRole} accounts`);
+      throw new Error(`Privilege escalation prevented: only administrators can create ADMIN accounts`);
     }
-    finalRole = requestedRole;
+    finalRole = 'ADMIN';
+  } else if (requestedRole === 'TEACHER') {
+    finalRole = 'TEACHER';
+  } else {
+    finalRole = 'STUDENT';
   }
 
   const existing = await get('SELECT id FROM users WHERE email = ?', [cleanEmail]);

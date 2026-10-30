@@ -43,7 +43,9 @@ const {
   generateStudyNotesPdf,
 } = require('./pdfService');
 const { saveRecording, streamRecording } = require('./recordingService');
+const { evaluateLectureTopicVisualizations, invalidateLectureVisualizationCache } = require('./lectureVisualizationService');
 const { callGemini } = require('./aiModelHelper');
+const { attachSttSocketHandlers, startSttServer } = require('./unifiedSttServer');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
@@ -127,8 +129,8 @@ async function forwardRequestToSpringBoot(req, res, targetPath, options = {}) {
       return res.send(Buffer.from(arrayBuffer));
     }
 
-    if (!response.ok && response.status >= 500) {
-      throw new Error(`Spring Boot server error: ${response.status}`);
+    if (!response.ok && (response.status >= 500 || (response.status === 404 && options.fallback))) {
+      throw new Error(`Spring Boot returned status ${response.status}`);
     }
 
     const data = await response.json();
@@ -639,9 +641,11 @@ app.post('/api/lectures/:lectureId/board-frame', optionalAuth, async (req, res) 
       timestamp: parseFloat(timestamp) || 0,
     });
 
-    // Notify room of new whiteboard concept (emit to both roomId and resolved lectureId)
+    // Notify room of new whiteboard concept (emit to targetRoomId, and to resolvedId if different)
     io.to(targetRoomId).emit('boardContentAdded', result);
-    io.to(resolvedId).emit('boardContentAdded', result);
+    if (resolvedId && resolvedId !== targetRoomId) {
+      io.to(resolvedId).emit('boardContentAdded', result);
+    }
 
     res.json({ success: true, content: result });
   } catch (err) {
@@ -666,9 +670,11 @@ app.post('/api/lectures/:lectureId/screen-frame', optionalAuth, async (req, res)
     });
 
     io.to(targetRoomId).emit('screenContentAdded', result);
-    io.to(resolvedId).emit('screenContentAdded', result);
     io.to(targetRoomId).emit('boardContentAdded', result);
-    io.to(resolvedId).emit('boardContentAdded', result);
+    if (resolvedId && resolvedId !== targetRoomId) {
+      io.to(resolvedId).emit('screenContentAdded', result);
+      io.to(resolvedId).emit('boardContentAdded', result);
+    }
 
     res.json({ success: true, content: result });
   } catch (err) {
@@ -899,6 +905,18 @@ app.get('/api/lectures/:lectureId/notes', optionalAuth, async (req, res) => {
         visualizations: note.visualizations_json ? JSON.parse(note.visualizations_json) : [],
       },
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/lectures/:lectureId/visualizations', optionalAuth, async (req, res) => {
+  try {
+    const access = await checkLectureAccess(req.params.lectureId, req.user);
+    if (!access.allowed) return res.status(access.status).json({ error: access.error });
+
+    const manifest = await evaluateLectureTopicVisualizations(req.params.lectureId);
+    res.json(manifest);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1428,6 +1446,16 @@ async function bootstrap() {
   await createWorker();
   console.log('[Server] mediasoup worker ready');
 
+  // Attach embedded STT listeners to main Socket.IO
+  attachSttSocketHandlers(io);
+
+  // Auto-start standalone STT server on port 5000 in background if available
+  try {
+    startSttServer();
+  } catch (sttErr) {
+    console.warn('[Server] Notice: Standalone STT on port 5000:', sttErr.message);
+  }
+
   httpServer.listen(PORT, () => {
     console.log(`[Server] LectureLens running on http://localhost:${PORT}`);
   });
@@ -1449,8 +1477,10 @@ io.on('connection', (socket) => {
   // ── Create Room (Host / Teacher) ──────────────────────────────────────────
   socket.on('createRoom', async (data = {}, callback) => {
     try {
-      if (data.token && !currentUser) {
-        currentUser = verifyToken(data.token);
+      const authToken = data.token || socket.handshake.auth?.token || socket.handshake.query?.token;
+      if (authToken) {
+        const verified = verifyToken(authToken);
+        if (verified) currentUser = verified;
       }
       if (!currentUser || (currentUser.role !== 'TEACHER' && currentUser.role !== 'ADMIN')) {
         return callback({ error: 'Authentication required: only teachers and administrators can host lecture sessions.' });
@@ -1504,8 +1534,10 @@ io.on('connection', (socket) => {
   socket.on('joinRoom', async (payload = {}, callback) => {
     try {
       const data = typeof payload === 'string' ? { roomId: payload } : payload;
-      if (data.token && !currentUser) {
-        currentUser = verifyToken(data.token);
+      const authToken = data.token || socket.handshake.auth?.token || socket.handshake.query?.token;
+      if (authToken) {
+        const verified = verifyToken(authToken);
+        if (verified) currentUser = verified;
       }
       const normalizedRoomId = (data.roomId || '').trim().toUpperCase();
       if (!normalizedRoomId || normalizedRoomId === 'UNDEFINED' || normalizedRoomId === 'NULL') {
@@ -1812,28 +1844,36 @@ io.on('connection', (socket) => {
         );
       }
 
-      // Persist segments to database
+      // Batch persist only NEW or CHANGED segments to SQLite (prevents CPU & SQLite disk starvation)
+      const existingRows = await all(
+        'SELECT id, chunk_id, text, end_time FROM transcript_segments WHERE lecture_id = ? OR lecture_id = ?',
+        [lectureId, normRoomId]
+      );
+      const existingMap = new Map();
+      for (const row of existingRows) {
+        existingMap.set(String(row.chunk_id), row);
+      }
+
+      const speakerName = currentUser?.name ? currentUser.name : 'Teacher';
       for (const seg of segments) {
         if (!seg.text || seg.status === 'pending') continue;
 
-        const existingSeg = await get(
-          `SELECT id FROM transcript_segments WHERE (lecture_id = ? OR lecture_id = ?) AND chunk_id = ?`,
-          [lectureId, normRoomId, seg.id]
-        );
-
-        const speakerName = seg.speakerName || (currentUser?.name ? currentUser.name : 'Teacher');
+        const segKey = String(seg.id);
+        const existingSeg = existingMap.get(segKey);
 
         if (!existingSeg) {
           await run(
             `INSERT INTO transcript_segments (lecture_id, chunk_id, speaker_id, speaker_name, start_time, end_time, text)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [lectureId, seg.id, currentUser?.id || 'host', speakerName, seg.startOffset, seg.endOffset || seg.startOffset + 3.0, seg.text]
+            [lectureId, seg.id, currentUser?.id || 'host', seg.speakerName || speakerName, seg.startOffset, seg.endOffset || seg.startOffset + 3.0, seg.text]
           );
-        } else {
+          existingMap.set(segKey, { text: seg.text, end_time: seg.endOffset });
+        } else if (existingSeg.text !== seg.text || existingSeg.end_time !== seg.endOffset) {
           await run(
             `UPDATE transcript_segments SET text = ?, end_time = ? WHERE id = ?`,
             [seg.text, seg.endOffset, existingSeg.id]
           );
+          existingMap.set(segKey, { ...existingSeg, text: seg.text, end_time: seg.endOffset });
         }
       }
     } catch (e) {

@@ -90,7 +90,7 @@ export default function Navbar({ customRightAction = null }) {
                   ...(location.pathname.startsWith('/lab') ? styles.navLinkActive : {}),
                 }}
               >
-                🔬 3D Lab
+                Simulations
               </Link>
             </>
           )}
@@ -157,7 +157,7 @@ export default function Navbar({ customRightAction = null }) {
               style={styles.mobileNavLink}
               onClick={() => setMobileMenuOpen(false)}
             >
-              🏠 Home
+              Home
             </Link>
             {user && (
               <>
@@ -166,14 +166,14 @@ export default function Navbar({ customRightAction = null }) {
                   style={styles.mobileNavLink}
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  📊 Dashboard
+                  Dashboard
                 </Link>
                 <Link
                   to="/lab"
                   style={styles.mobileNavLink}
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  🔬 3D Lab
+                  Simulations
                 </Link>
               </>
             )}

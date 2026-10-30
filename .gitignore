@@ -9,6 +9,8 @@ LectureLens/server/node_modules/
 .env
 .env.*
 *.env
+!.env.example
+!*.env.example
 LectureLens/client/.env
 LectureLens/server/.env
 

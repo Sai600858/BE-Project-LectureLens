@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import Badge from '../Badge';
 import Button from '../Button';
+import { isWebGLAvailable } from '../../utils/webglSupport';
 
 // AVL Node Class
 class AVLNode {
@@ -47,15 +48,20 @@ function leftRotate(x) {
   return y;
 }
 
-function insertNode(node, key, autoBalance = true, rotationLogs = []) {
+/**
+ * Standard, mathematically rigorous AVL insertion algorithm
+ * Checks child balance factors (not single key comparison) for canonical LL/RR/LR/RL rotation selection.
+ */
+function insertNode(node, key, autoBalance = true, rotationLogs = [], flags = { isDuplicate: false }) {
   if (!node) return new AVLNode(key);
 
   if (key < node.key) {
-    node.left = insertNode(node.left, key, autoBalance, rotationLogs);
+    node.left = insertNode(node.left, key, autoBalance, rotationLogs, flags);
   } else if (key > node.key) {
-    node.right = insertNode(node.right, key, autoBalance, rotationLogs);
+    node.right = insertNode(node.right, key, autoBalance, rotationLogs, flags);
   } else {
-    return node; // Duplicate keys not inserted
+    flags.isDuplicate = true;
+    return node; // Duplicate keys not inserted in strict BST
   }
 
   node.height = 1 + Math.max(getHeight(node.left), getHeight(node.right));
@@ -64,30 +70,32 @@ function insertNode(node, key, autoBalance = true, rotationLogs = []) {
 
   const balance = getBalance(node);
 
-  // Left Left Case
-  if (balance > 1 && key < node.left.key) {
-    rotationLogs.push(`🔄 Right Rotation on Node ${node.key} (Left-Left heavy)`);
-    return rightRotate(node);
+  // Left Heavy
+  if (balance > 1) {
+    if (getBalance(node.left) >= 0) {
+      // LL Case -> Single Right Rotation
+      rotationLogs.push(`🔄 Right Rotation on Node ${node.key} (Left-Left heavy, BF=${balance})`);
+      return rightRotate(node);
+    } else {
+      // LR Case -> Left Rotate Left Child, then Right Rotate Node
+      rotationLogs.push(`🔄 Left-Right Double Rotation on Node ${node.key} (Left-Right heavy, BF=${balance})`);
+      node.left = leftRotate(node.left);
+      return rightRotate(node);
+    }
   }
 
-  // Right Right Case
-  if (balance < -1 && key > node.right.key) {
-    rotationLogs.push(`🔄 Left Rotation on Node ${node.key} (Right-Right heavy)`);
-    return leftRotate(node);
-  }
-
-  // Left Right Case
-  if (balance > 1 && key > node.left.key) {
-    rotationLogs.push(`🔄 Left-Right Double Rotation on Node ${node.key}`);
-    node.left = leftRotate(node.left);
-    return rightRotate(node);
-  }
-
-  // Right Left Case
-  if (balance < -1 && key < node.right.key) {
-    rotationLogs.push(`🔄 Right-Left Double Rotation on Node ${node.key}`);
-    node.right = rightRotate(node.right);
-    return leftRotate(node);
+  // Right Heavy
+  if (balance < -1) {
+    if (getBalance(node.right) <= 0) {
+      // RR Case -> Single Left Rotation
+      rotationLogs.push(`🔄 Left Rotation on Node ${node.key} (Right-Right heavy, BF=${balance})`);
+      return leftRotate(node);
+    } else {
+      // RL Case -> Right Rotate Right Child, then Left Rotate Node
+      rotationLogs.push(`🔄 Right-Left Double Rotation on Node ${node.key} (Right-Left heavy, BF=${balance})`);
+      node.right = rightRotate(node.right);
+      return leftRotate(node);
+    }
   }
 
   return node;
@@ -96,9 +104,11 @@ function insertNode(node, key, autoBalance = true, rotationLogs = []) {
 export default function AvlTree3D() {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
+  const cameraRef = useRef(null);
   const rendererRef = useRef(null);
   const reqIdRef = useRef(null);
   const objectsGroupRef = useRef(null);
+  const timeoutsRef = useRef([]);
 
   const [root, setRoot] = useState(() => {
     let tree = new AVLNode(30);
@@ -114,15 +124,24 @@ export default function AvlTree3D() {
   const [highlightPath, setHighlightPath] = useState([]);
   const [actionMessage, setActionMessage] = useState('Interactive AVL tree initialized. Insert or search keys.');
   const [showTextAlt, setShowTextAlt] = useState(false);
+  const [webglSupported, setWebglSupported] = useState(true);
 
-  // Text label sprite generator
+  // Safe timeout
+  const addTimeout = (fn, delay) => {
+    const id = setTimeout(fn, delay);
+    timeoutsRef.current.push(id);
+    return id;
+  };
+
+  // Text label sprite generator with texture reference
   const createNodeSprite = (text, sub = '') => {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
     canvas.height = 128;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-    ctx.roundRect ? ctx.roundRect(10, 10, 236, 108, 16) : ctx.rect(10, 10, 236, 108);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    if (ctx.roundRect) ctx.roundRect(8, 8, 240, 112, 16);
+    else ctx.rect(8, 8, 240, 112);
     ctx.fill();
     ctx.strokeStyle = '#38bdf8';
     ctx.lineWidth = 4;
@@ -135,7 +154,7 @@ export default function AvlTree3D() {
 
     if (sub) {
       ctx.fillStyle = '#94a3b8';
-      ctx.font = '22px sans-serif';
+      ctx.font = 'bold 22px sans-serif';
       ctx.fillText(sub, 128, 92);
     }
 
@@ -143,33 +162,46 @@ export default function AvlTree3D() {
     const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
     const sprite = new THREE.Sprite(spriteMat);
     sprite.scale.set(1.6, 0.8, 1);
+    sprite.userData = { texture };
     return sprite;
   };
 
   // Three.js Scene Setup
   useEffect(() => {
+    if (!isWebGLAvailable()) {
+      setWebglSupported(false);
+      return;
+    }
+
     const container = mountRef.current;
     if (!container) return;
 
     const width = container.clientWidth || 800;
     const height = container.clientHeight || 450;
 
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      rendererRef.current = renderer;
+      container.appendChild(renderer.domElement);
+    } catch (err) {
+      console.warn('WebGL init failed:', err);
+      setWebglSupported(false);
+      return;
+    }
+
     const scene = new THREE.Scene();
     sceneRef.current = scene;
     scene.background = new THREE.Color(0x060911);
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 0, 13);
-    camera.lookAt(0, -1, 0);
+    camera.position.set(0, 0, 14);
+    camera.lookAt(0, 0, 0);
+    cameraRef.current = camera;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    rendererRef.current = renderer;
-    container.appendChild(renderer.domElement);
-
-    // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
     dirLight.position.set(5, 10, 10);
@@ -179,12 +211,11 @@ export default function AvlTree3D() {
     scene.add(objectsGroup);
     objectsGroupRef.current = objectsGroup;
 
-    // Animation Loop
-    let angle = 0;
+    let rotAngle = 0;
     const animate = () => {
       reqIdRef.current = requestAnimationFrame(animate);
-      angle += 0.002;
-      objectsGroup.rotation.y = Math.sin(angle) * 0.1;
+      rotAngle += 0.002;
+      objectsGroup.rotation.y = Math.sin(rotAngle) * 0.08;
       renderer.render(scene, camera);
     };
     animate();
@@ -193,9 +224,11 @@ export default function AvlTree3D() {
       if (!container || !renderer) return;
       const w = container.clientWidth;
       const h = container.clientHeight || 450;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
+      if (w > 0 && h > 0) {
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
     };
     const ro = new ResizeObserver(handleResize);
     ro.observe(container);
@@ -203,29 +236,37 @@ export default function AvlTree3D() {
     return () => {
       if (reqIdRef.current) cancelAnimationFrame(reqIdRef.current);
       ro.disconnect();
+      timeoutsRef.current.forEach(clearTimeout);
+
+      // Clean up meshes and textures
+      if (objectsGroupRef.current) {
+        objectsGroupRef.current.traverse((child) => {
+          if (child.userData?.texture) child.userData.texture.dispose();
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) child.material.forEach((m) => m.dispose());
+            else child.material.dispose();
+          }
+        });
+      }
+
       if (renderer.domElement && container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
       renderer.dispose();
-      scene.traverse((obj) => {
-        if (obj.geometry) obj.geometry.dispose();
-        if (obj.material) {
-          if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose());
-          else obj.material.dispose();
-        }
-      });
     };
   }, []);
 
-  // Render 3D Tree Mesh Layout
+  // Render 3D Tree Mesh Layout (With in-order spacing to prevent node collision)
   useEffect(() => {
     const group = objectsGroupRef.current;
     if (!group) return;
 
-    // Clear previous tree objects
+    // Dispose old tree children cleanly
     while (group.children.length > 0) {
       const child = group.children[0];
       group.remove(child);
+      if (child.userData?.texture) child.userData.texture.dispose();
       if (child.geometry) child.geometry.dispose();
       if (child.material) {
         if (Array.isArray(child.material)) child.material.forEach((m) => m.dispose());
@@ -235,22 +276,46 @@ export default function AvlTree3D() {
 
     if (!root) return;
 
-    // Recursive layout calculator
-    const build3DTree = (node, x, y, z, xOffset, depth) => {
+    // Step 1: In-order traversal to compute collision-free X coordinates
+    let indexCounter = 0;
+    const positions = new Map();
+    const inOrderTraverse = (node, depth) => {
       if (!node) return;
+      inOrderTraverse(node.left, depth + 1);
+      positions.set(node.key, { xIndex: indexCounter++, depth });
+      inOrderTraverse(node.right, depth + 1);
+    };
+    inOrderTraverse(root, 0);
+
+    const totalNodes = positions.size;
+    const horizSpacing = Math.max(1.8, Math.min(3.2, 14 / (totalNodes || 1)));
+    const vertSpacing = 2.0;
+
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    // Step 2: Build node spheres, labels, and connecting branches
+    const renderNode3D = (node) => {
+      if (!node) return;
+      const posInfo = positions.get(node.key);
+      const x = (posInfo.xIndex - (totalNodes - 1) / 2) * horizSpacing;
+      const y = 3.0 - posInfo.depth * vertSpacing;
+      const z = 0;
+
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
 
       const isHighlighted = highlightPath.includes(node.key);
       const bf = getBalance(node);
       const isUnbalanced = Math.abs(bf) > 1;
 
-      // Node Sphere
+      // Sphere
       const sphereGeo = new THREE.SphereGeometry(0.55, 32, 32);
-      const color = isHighlighted
-        ? 0xf59e0b
-        : isUnbalanced
-        ? 0xef4444
-        : 0x3b82f6;
-
+      const color = isHighlighted ? 0xf59e0b : isUnbalanced ? 0xef4444 : 0x3b82f6;
       const sphereMat = new THREE.MeshStandardMaterial({
         color,
         emissive: color,
@@ -261,70 +326,109 @@ export default function AvlTree3D() {
       sphere.position.set(x, y, z);
       group.add(sphere);
 
-      // Node Label Sprite
+      // Label sprite
       const sprite = createNodeSprite(node.key, `H:${node.height} BF:${bf}`);
-      sprite.position.set(x, y + 0.9, z);
+      sprite.position.set(x, y + 0.95, z);
       group.add(sprite);
 
-      // Branch to Left
+      // Branch to Left child
       if (node.left) {
-        const leftX = x - xOffset;
-        const leftY = y - 1.8;
+        const leftPos = positions.get(node.left.key);
+        const lx = (leftPos.xIndex - (totalNodes - 1) / 2) * horizSpacing;
+        const ly = 3.0 - leftPos.depth * vertSpacing;
+
         const branchGeo = new THREE.BufferGeometry().setFromPoints([
           new THREE.Vector3(x, y, z),
-          new THREE.Vector3(leftX, leftY, z),
+          new THREE.Vector3(lx, ly, z),
         ]);
-        const branchMat = new THREE.LineBasicMaterial({ color: 0x334155, linewidth: 2 });
+        const branchMat = new THREE.LineBasicMaterial({ color: 0x475569, linewidth: 2 });
         const branch = new THREE.Line(branchGeo, branchMat);
         group.add(branch);
 
-        build3DTree(node.left, leftX, leftY, z, xOffset * 0.52, depth + 1);
+        renderNode3D(node.left);
       }
 
-      // Branch to Right
+      // Branch to Right child
       if (node.right) {
-        const rightX = x + xOffset;
-        const rightY = y - 1.8;
+        const rightPos = positions.get(node.right.key);
+        const rx = (rightPos.xIndex - (totalNodes - 1) / 2) * horizSpacing;
+        const ry = 3.0 - rightPos.depth * vertSpacing;
+
         const branchGeo = new THREE.BufferGeometry().setFromPoints([
           new THREE.Vector3(x, y, z),
-          new THREE.Vector3(rightX, rightY, z),
+          new THREE.Vector3(rx, ry, z),
         ]);
-        const branchMat = new THREE.LineBasicMaterial({ color: 0x334155, linewidth: 2 });
+        const branchMat = new THREE.LineBasicMaterial({ color: 0x475569, linewidth: 2 });
         const branch = new THREE.Line(branchGeo, branchMat);
         group.add(branch);
 
-        build3DTree(node.right, rightX, rightY, z, xOffset * 0.52, depth + 1);
+        renderNode3D(node.right);
       }
     };
 
-    // Center root around (0, 2.5, 0)
-    build3DTree(root, 0, 2.2, 0, 3.2, 0);
+    renderNode3D(root);
+
+    // Dynamic Camera Framing to ensure all nodes remain visible
+    if (cameraRef.current && isFinite(minX) && isFinite(maxX)) {
+      const treeWidth = maxX - minX;
+      const treeHeight = maxY - minY;
+      const requiredDist = Math.max(13, Math.max(treeWidth * 1.3, treeHeight * 1.6));
+      cameraRef.current.position.z = requiredDist;
+      cameraRef.current.position.y = (maxY + minY) / 2;
+      cameraRef.current.lookAt(0, (maxY + minY) / 2, 0);
+    }
   }, [root, highlightPath]);
+
+  // Deep clone helper for React state purity
+  const cloneTree = (node) => {
+    if (!node) return null;
+    const copy = new AVLNode(node.key);
+    copy.height = node.height;
+    copy.left = cloneTree(node.left);
+    copy.right = cloneTree(node.right);
+    return copy;
+  };
 
   // Insert Key Action
   const handleInsert = (val) => {
-    const key = typeof val === 'number' ? val : parseInt(inputVal.trim(), 10);
-    if (isNaN(key)) return;
+    const raw = typeof val === 'number' ? val : inputVal.trim();
+    const key = typeof val === 'number' ? val : parseInt(raw, 10);
+    if (isNaN(key)) {
+      setActionMessage('⚠️ Please enter a valid integer key.');
+      return;
+    }
 
     const rotationLogs = [];
-    const newRoot = insertNode(root ? cloneTree(root) : null, key, autoBalance, rotationLogs);
+    const flags = { isDuplicate: false };
+    const newRoot = insertNode(root ? cloneTree(root) : null, key, autoBalance, rotationLogs, flags);
+
+    if (flags.isDuplicate) {
+      setActionMessage(`⚠️ Key ${key} already exists in the tree. Duplicates are rejected in strict BST.`);
+      setHighlightPath([key]);
+      addTimeout(() => setHighlightPath([]), 2000);
+      return;
+    }
+
     setRoot(newRoot);
     setInputVal('');
     setHighlightPath([key]);
 
     if (rotationLogs.length > 0) {
-      setActionMessage(`Inserted ${key}. ${rotationLogs.join(' • ')}`);
+      setActionMessage(`Inserted key ${key}. ${rotationLogs.join(' • ')}`);
     } else {
-      setActionMessage(`Inserted key ${key}. Tree height is now ${getHeight(newRoot)}.`);
+      setActionMessage(`Inserted key ${key}. Tree height is now ${getHeight(newRoot)}, root is ${newRoot.key}.`);
     }
 
-    setTimeout(() => setHighlightPath([]), 2000);
+    addTimeout(() => setHighlightPath([]), 2500);
   };
 
   // Search Key Action
   const handleSearch = () => {
     const key = parseInt(inputVal.trim(), 10);
-    if (isNaN(key)) return;
+    if (isNaN(key)) {
+      setActionMessage('⚠️ Please enter a valid integer key to search.');
+      return;
+    }
 
     const path = [];
     let curr = root;
@@ -344,24 +448,16 @@ export default function AvlTree3D() {
 
     setHighlightPath(path);
     if (found) {
-      setActionMessage(`🔍 Key ${key} found! Traversal path: [${path.join(' → ')}].`);
+      setActionMessage(`🔍 Key ${key} found! Traversal path: [${path.join(' → ')}] (${path.length} comparison${path.length > 1 ? 's' : ''}, O(log N)).`);
     } else {
-      setActionMessage(`❌ Key ${key} not in tree. Search path ended at null: [${path.join(' → ')}].`);
+      setActionMessage(`❌ Key ${key} not in tree. Search path ended at null: [${path.join(' → ')}] (${path.length} comparisons).`);
     }
-  };
-
-  // Deep clone helper for React state purity
-  const cloneTree = (node) => {
-    if (!node) return null;
-    const copy = new AVLNode(node.key);
-    copy.height = node.height;
-    copy.left = cloneTree(node.left);
-    copy.right = cloneTree(node.right);
-    return copy;
   };
 
   // Reset Tree
   const handleReset = () => {
+    timeoutsRef.current.forEach(clearTimeout);
+    timeoutsRef.current = [];
     let tree = new AVLNode(30);
     tree = insertNode(tree, 15, true);
     tree = insertNode(tree, 50, true);
@@ -369,7 +465,7 @@ export default function AvlTree3D() {
     tree = insertNode(tree, 20, true);
     setRoot(tree);
     setHighlightPath([]);
-    setActionMessage('Tree reset to balanced initial state.');
+    setActionMessage('Tree reset to balanced initial state with keys [30, 15, 50, 10, 20].');
   };
 
   // Collect in-order list for accessible alternative
@@ -385,35 +481,47 @@ export default function AvlTree3D() {
 
   return (
     <div style={styles.container}>
-      {/* 3D Visualizer Canvas */}
-      <div style={styles.canvasWrapper} ref={mountRef}>
-        <div style={styles.sceneOverlay}>
-          <div style={styles.statusBadge}>
-            <span>Tree Height: <strong>{getHeight(root)}</strong></span>
-            <span style={{ color: '#94a3b8' }}>•</span>
-            <span>Total Nodes: <strong>{inOrderList.length}</strong></span>
-            <span style={{ color: '#94a3b8' }}>•</span>
-            <Badge variant={autoBalance ? 'emerald' : 'amber'} size="sm">
-              {autoBalance ? 'AVL Balancing ON' : 'Unbalanced BST'}
-            </Badge>
-          </div>
+      {/* 3D Visualizer Canvas or WebGL fallback */}
+      {webglSupported ? (
+        <div style={styles.canvasWrapper} ref={mountRef}>
+          <div style={styles.sceneOverlay}>
+            <div style={styles.statusBadge}>
+              <span>Tree Height: <strong>{getHeight(root)}</strong></span>
+              <span style={{ color: '#94a3b8' }}>•</span>
+              <span>Total Nodes: <strong>{inOrderList.length}</strong></span>
+              <span style={{ color: '#94a3b8' }}>•</span>
+              <Badge variant={autoBalance ? 'emerald' : 'amber'} size="sm">
+                {autoBalance ? 'AVL Balancing ON' : 'Unbalanced BST'}
+              </Badge>
+            </div>
 
-          <div style={styles.legendRow}>
-            <div style={styles.legendItem}>
-              <span style={{ ...styles.legendDot, background: '#3b82f6' }} />
-              <span>Balanced</span>
-            </div>
-            <div style={styles.legendItem}>
-              <span style={{ ...styles.legendDot, background: '#f59e0b' }} />
-              <span>Path / Found</span>
-            </div>
-            <div style={styles.legendItem}>
-              <span style={{ ...styles.legendDot, background: '#ef4444' }} />
-              <span>|BF| &gt; 1</span>
+            <div style={styles.legendRow}>
+              <div style={styles.legendItem}>
+                <span style={{ ...styles.legendDot, background: '#3b82f6' }} />
+                <span>Balanced</span>
+              </div>
+              <div style={styles.legendItem}>
+                <span style={{ ...styles.legendDot, background: '#f59e0b' }} />
+                <span>Path / Found</span>
+              </div>
+              <div style={styles.legendItem}>
+                <span style={{ ...styles.legendDot, background: '#ef4444' }} />
+                <span>|BF| &gt; 1</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div style={styles.fallbackNotice}>
+          <span style={{ fontSize: '24px' }}>⚠️</span>
+          <div>
+            <strong>WebGL Acceleration Unavailable</strong>
+            <p style={{ margin: '4px 0 0', fontSize: '12.5px', color: '#cbd5e1' }}>
+              3D hardware rendering is unavailable. Tree structure and balance factors are accessible in the live tree table below.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Action Event Callout Banner */}
       <div style={styles.actionBanner} role="status" aria-live="polite">
@@ -434,87 +542,86 @@ export default function AvlTree3D() {
             aria-label="Tree key value"
           />
           <Button onClick={() => handleInsert()} variant="primary" size="sm" icon="+">
-            Insert
+            Insert Key
           </Button>
           <Button onClick={handleSearch} variant="secondary" size="sm" icon="🔍">
             Search
+          </Button>
+          <Button onClick={handleReset} variant="outline" size="sm" icon="↺">
+            Reset
           </Button>
         </div>
 
         {/* Quick Presets */}
         <div style={styles.presetGroup}>
-          <span style={styles.presetLabel}>Quick Keys:</span>
+          <span style={styles.presetLabel}>Quick Insert:</span>
           {[25, 40, 5, 60, 35].map((k) => (
             <button
               key={k}
               onClick={() => handleInsert(k)}
               style={styles.quickKeyBtn}
-              title={`Insert key ${k}`}
-              aria-label={`Insert key ${k}`}
+              title={`Insert ${k}`}
             >
               +{k}
             </button>
           ))}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button
-            onClick={() => setAutoBalance(!autoBalance)}
-            style={{
-              ...styles.toggleBalanceBtn,
-              background: autoBalance ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-              borderColor: autoBalance ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)',
-              color: autoBalance ? '#34d399' : '#fbbf24',
-            }}
-            aria-label={`Toggle AVL auto balancing. Currently ${autoBalance ? 'enabled' : 'disabled'}`}
-          >
-            {autoBalance ? '⚖️ Auto-AVL: ON' : '⚠️ Auto-AVL: OFF'}
-          </button>
+        {/* Toggle Auto-Balance */}
+        <button
+          onClick={() => setAutoBalance((prev) => !prev)}
+          style={{
+            ...styles.balanceToggleBtn,
+            background: autoBalance ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+            borderColor: autoBalance ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)',
+            color: autoBalance ? '#34d399' : '#fbbf24',
+          }}
+          aria-pressed={autoBalance}
+        >
+          {autoBalance ? '⚖️ Auto-Balancing: ON' : '⚠️ Auto-Balancing: OFF'}
+        </button>
 
-          <Button onClick={handleReset} variant="secondary" size="sm" icon="↺">
-            Reset
-          </Button>
-
-          <button
-            onClick={() => setShowTextAlt((prev) => !prev)}
-            style={styles.textAltToggleBtn}
-            aria-expanded={showTextAlt}
-          >
-            {showTextAlt ? 'Hide In-Order Table' : '📊 View In-Order Table'}
-          </button>
-        </div>
+        <button
+          onClick={() => setShowTextAlt((prev) => !prev)}
+          style={styles.textAltToggleBtn}
+          aria-expanded={showTextAlt}
+        >
+          {showTextAlt ? 'Hide Tabular Alternative' : '📊 View Tree Table'}
+        </button>
       </div>
 
-      {/* Accessible Text Alternative & Algorithm Explanation */}
-      {showTextAlt && (
+      {/* Accessible Tree Inspector Table */}
+      {(showTextAlt || !webglSupported) && (
         <div style={styles.textAltSection}>
-          <h4 style={styles.textAltTitle}>BST In-Order Traversal & Balance Factor Breakdown</h4>
+          <h4 style={styles.textAltTitle}>AVL Tree In-Order Traversal & Balance Metrics</h4>
           <div style={{ overflowX: 'auto' }}>
             <table style={styles.stateTable}>
               <thead>
                 <tr>
-                  <th style={styles.th}>Key Value</th>
-                  <th style={styles.th}>Subtree Height ($H$)</th>
-                  <th style={styles.th}>Balance Factor ($BF = H_L - H_R$)</th>
+                  <th style={styles.th}>Sorted Order</th>
+                  <th style={styles.th}>Node Key</th>
+                  <th style={styles.th}>Subtree Height</th>
+                  <th style={styles.th}>Balance Factor (L - R)</th>
                   <th style={styles.th}>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {inOrderList.map((item) => (
+                {inOrderList.map((item, idx) => (
                   <tr key={item.key}>
-                    <td style={styles.td}><strong>{item.key}</strong></td>
+                    <td style={styles.td}>#{idx + 1}</td>
+                    <td style={styles.td}>
+                      <strong style={{ color: '#38bdf8' }}>{item.key}</strong>
+                    </td>
                     <td style={styles.td}>{item.height}</td>
                     <td style={styles.td}>
-                      <span style={{ color: Math.abs(item.bf) > 1 ? '#ef4444' : '#38bdf8', fontWeight: '700' }}>
-                        {item.bf}
+                      <span style={{ color: Math.abs(item.bf) > 1 ? '#ef4444' : '#10b981', fontWeight: '700' }}>
+                        {item.bf > 0 ? `+${item.bf}` : item.bf}
                       </span>
                     </td>
                     <td style={styles.td}>
-                      {Math.abs(item.bf) > 1 ? (
-                        <Badge variant="rose" size="sm">Unbalanced (|BF| &gt; 1)</Badge>
-                      ) : (
-                        <Badge variant="emerald" size="sm">Balanced</Badge>
-                      )}
+                      <Badge variant={Math.abs(item.bf) <= 1 ? 'emerald' : 'rose'} size="sm">
+                        {Math.abs(item.bf) <= 1 ? 'Balanced' : 'Imbalanced'}
+                      </Badge>
                     </td>
                   </tr>
                 ))}
@@ -524,20 +631,17 @@ export default function AvlTree3D() {
 
           <div style={styles.theoryBox}>
             <h5 style={{ color: '#38bdf8', margin: '0 0 6px 0', fontSize: '13px' }}>
-              📚 AVL Balancing & Rotation Rules:
+              📚 AVL Tree Properties & Guarantees:
             </h5>
             <ul style={{ margin: 0, paddingLeft: '18px', color: '#cbd5e1', fontSize: '12.5px', lineHeight: 1.6 }}>
               <li>
-                <strong>Height-Balancing Property:</strong> An AVL tree enforces $|H(\text{Left}) - H(\text{Right})| \le 1$ at every node, maintaining $O(\log N)$ worst-case lookup time.
+                <strong>AVL Invariant:</strong> For every node in the tree, $|Height(Left) - Height(Right)| \le 1$.
               </li>
               <li>
-                <strong>Left-Left (LL) Heavy:</strong> Fixed by a single Right Rotation.
+                <strong>Rotations:</strong> Left-Left (LL) and Right-Right (RR) use single rotations; Left-Right (LR) and Right-Left (RL) use double rotations.
               </li>
               <li>
-                <strong>Right-Right (RR) Heavy:</strong> Fixed by a single Left Rotation.
-              </li>
-              <li>
-                <strong>Left-Right (LR) Heavy:</strong> Requires a double rotation: Left rotate the left child, then Right rotate the node.
+                <strong>Complexity:</strong> Guarantee strict $O(\log N)$ worst-case search, insertion, and deletion time.
               </li>
             </ul>
           </div>
@@ -562,6 +666,16 @@ const styles = {
     position: 'relative',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     boxShadow: '0 8px 32px rgba(0, 0, 0, 0.45)',
+  },
+  fallbackNotice: {
+    background: 'rgba(15, 23, 42, 0.85)',
+    border: '1px solid rgba(245, 158, 11, 0.3)',
+    borderRadius: '14px',
+    padding: '20px',
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '12px',
+    color: '#fef3c7',
   },
   sceneOverlay: {
     position: 'absolute',
@@ -613,24 +727,24 @@ const styles = {
     display: 'inline-block',
   },
   actionBanner: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    background: 'rgba(15, 23, 42, 0.8)',
+    background: 'linear-gradient(90deg, rgba(2, 132, 199, 0.15) 0%, rgba(15, 23, 42, 0.6) 100%)',
     border: '1px solid rgba(56, 189, 248, 0.25)',
     borderRadius: '10px',
     padding: '10px 16px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
   },
   controlsBar: {
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: '12px',
-    background: 'rgba(15, 23, 42, 0.7)',
+    background: 'rgba(15, 23, 42, 0.65)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '12px',
-    padding: '14px',
+    padding: '12px 16px',
   },
   inputRow: {
     display: 'flex',
@@ -638,64 +752,56 @@ const styles = {
     gap: '8px',
   },
   numInput: {
-    background: 'rgba(8, 12, 20, 0.9)',
+    background: 'rgba(15, 23, 42, 0.8)',
     border: '1px solid rgba(255, 255, 255, 0.15)',
     borderRadius: '8px',
-    padding: '8px 12px',
+    padding: '6px 12px',
     color: '#ffffff',
-    fontSize: '13.5px',
+    fontSize: '13px',
     width: '110px',
     outline: 'none',
-    minHeight: '44px',
   },
   presetGroup: {
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
-    flexWrap: 'wrap',
   },
   presetLabel: {
-    fontSize: '12px',
+    fontSize: '11px',
     color: '#94a3b8',
-    fontWeight: '600',
-    marginRight: '2px',
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
   quickKeyBtn: {
-    background: 'rgba(255, 255, 255, 0.08)',
+    background: 'rgba(255, 255, 255, 0.06)',
     border: '1px solid rgba(255, 255, 255, 0.12)',
-    color: '#38bdf8',
     borderRadius: '6px',
-    padding: '6px 10px',
+    padding: '5px 8px',
+    color: '#cbd5e1',
+    fontSize: '11.5px',
+    fontWeight: '600',
+    cursor: 'pointer',
+  },
+  balanceToggleBtn: {
+    padding: '6px 12px',
+    borderRadius: '8px',
+    border: '1px solid',
     fontSize: '12px',
     fontWeight: '700',
     cursor: 'pointer',
-    minHeight: '44px',
-    minWidth: '44px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  toggleBalanceBtn: {
-    border: '1px solid',
-    borderRadius: '8px',
-    padding: '8px 14px',
-    fontSize: '12.5px',
-    fontWeight: '700',
-    cursor: 'pointer',
-    minHeight: '44px',
   },
   textAltToggleBtn: {
     background: 'transparent',
-    border: '1px dashed rgba(255, 255, 255, 0.2)',
-    color: '#94a3b8',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: '8px',
-    padding: '8px 14px',
+    padding: '6px 12px',
+    color: '#94a3b8',
     fontSize: '12px',
+    fontWeight: '600',
     cursor: 'pointer',
-    minHeight: '44px',
   },
   textAltSection: {
-    background: 'rgba(15, 23, 42, 0.85)',
+    background: 'rgba(15, 23, 42, 0.8)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '14px',
     padding: '20px',
@@ -704,34 +810,34 @@ const styles = {
     gap: '16px',
   },
   textAltTitle: {
+    margin: 0,
     fontSize: '15px',
     fontWeight: '700',
     color: '#ffffff',
-    margin: 0,
   },
   stateTable: {
     width: '100%',
     borderCollapse: 'collapse',
-    fontSize: '13px',
+    fontSize: '12.5px',
   },
   th: {
     textAlign: 'left',
-    padding: '10px 12px',
+    padding: '8px 12px',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
     color: '#94a3b8',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-    fontWeight: '700',
-    fontSize: '12px',
+    fontWeight: '600',
+    fontSize: '11.5px',
     textTransform: 'uppercase',
   },
   td: {
     padding: '10px 12px',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-    color: '#e2e8f0',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+    color: '#cbd5e1',
   },
   theoryBox: {
-    background: 'rgba(8, 12, 20, 0.7)',
-    borderLeft: '3px solid #38bdf8',
-    borderRadius: '8px',
-    padding: '12px 16px',
+    background: 'rgba(2, 132, 199, 0.08)',
+    border: '1px solid rgba(56, 189, 248, 0.2)',
+    borderRadius: '10px',
+    padding: '14px',
   },
 };

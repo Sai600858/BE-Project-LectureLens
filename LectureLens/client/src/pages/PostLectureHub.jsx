@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { lectureApi, aiApi } from '../services/api';
 import { BoardSnapshot } from '../components/BoardSnapshot';
 import StudyNotesViewer from '../components/StudyNotesViewer';
+import LectureVisualizerHost from '../components/lab/LectureVisualizerHost';
 import Navbar from '../components/Navbar';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
@@ -75,6 +76,11 @@ export default function PostLectureHub() {
   // PDF Export Feedback
   const [exportNotice, setExportNotice] = useState(null);
 
+  // Topic-Aware Visualizations
+  const [visualizationData, setVisualizationData] = useState(null);
+  const [selectedVizTopicId, setSelectedVizTopicId] = useState(null);
+  const [isLoadingViz, setIsLoadingViz] = useState(false);
+
   useEffect(() => {
     loadAllData();
   }, [lectureId]);
@@ -143,6 +149,22 @@ export default function PostLectureHub() {
         );
         setBoardContents(combined);
       } catch (e) {}
+
+      // Load Topic-Aware Visualizations
+      try {
+        setIsLoadingViz(true);
+        const vData = await aiApi.getLectureVisualizations(targetId);
+        setVisualizationData(vData);
+        if (vData?.recommendedVisualizations?.length > 0) {
+          setSelectedVizTopicId(vData.recommendedVisualizations[0].topicId);
+        } else if (vData?.topics?.length > 0) {
+          setSelectedVizTopicId(vData.topics[0].topicId);
+        }
+      } catch (e) {
+        console.warn('Visualizations fetch note:', e);
+      } finally {
+        setIsLoadingViz(false);
+      }
     } catch (err) {
       console.warn('Error loading lecture workspace:', err);
       setLoadError(err.response?.data?.error || err.message || 'Failed to load lecture workspace.');
@@ -181,6 +203,39 @@ export default function PostLectureHub() {
       return currentTime >= start && currentTime < end;
     });
   }, [chapters, currentTime]);
+
+  // Active visualizer item calculation
+  const activeVizItem = useMemo(() => {
+    if (!visualizationData) return null;
+    if (visualizationData.recommendedVisualizations?.length > 0) {
+      if (selectedVizTopicId) {
+        const found = visualizationData.recommendedVisualizations.find((v) => v.topicId === selectedVizTopicId);
+        if (found) return found;
+      }
+      return visualizationData.recommendedVisualizations[0];
+    }
+    if (visualizationData.topics?.length > 0) {
+      const top = visualizationData.topics.find((t) => t.topicId === selectedVizTopicId) || visualizationData.topics[0];
+      return {
+        topicId: top.topicId,
+        topicTitle: top.topicTitle,
+        lectureId,
+        visualizationType: 'CONVENTIONAL',
+        suitabilityCategory: 'CATEGORY_C',
+        learningObjective: top.learningObjective,
+        suitabilityRationale: top.reasoning,
+        grounding: {
+          lectureEvidence: `Curriculum topic: ${top.topicTitle}`,
+        },
+      };
+    }
+    return null;
+  }, [visualizationData, selectedVizTopicId, lectureId]);
+
+  const handleLaunchVisualizerForTopic = (topicId) => {
+    if (topicId) setSelectedVizTopicId(topicId);
+    setActiveTab('visualizations');
+  };
 
   // Transcript Search
   const handleSearch = async (query) => {
@@ -360,16 +415,47 @@ export default function PostLectureHub() {
             </button>
             <div style={styles.titleWrap}>
               <div style={styles.headerBadgesRow}>
-                <Badge variant={isLive ? 'rose' : isDone ? 'emerald' : 'amber'} size="sm">
-                  {isLive ? '🔴 LIVE' : isDone ? '✅ COMPLETED' : '⏳ SCHEDULED'}
-                </Badge>
-                <Badge variant="neutral" size="sm">
-                  {lecture?.visibility || 'PUBLIC'}
-                </Badge>
+                <span
+                  style={{
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    background: isLive ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                    color: isLive ? '#f87171' : '#34d399',
+                    border: isLive ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
+                  }}
+                >
+                  {isLive ? '🔴 Live Now' : 'Completed'}
+                </span>
+                <span
+                  style={{
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    color: '#94a3b8',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                  }}
+                >
+                  {lecture?.visibility || 'Public'}
+                </span>
                 {lecture?.room_id && (
-                  <Badge variant="cyan" size="sm">
-                    ROOM: {lecture?.room_id}
-                  </Badge>
+                  <span
+                    style={{
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      background: 'rgba(56, 189, 248, 0.1)',
+                      color: '#38bdf8',
+                      border: '1px solid rgba(56, 189, 248, 0.25)',
+                      fontFamily: 'var(--font-mono)',
+                    }}
+                  >
+                    Room: {lecture?.room_id}
+                  </span>
                 )}
               </div>
               <h1 style={styles.lectureTitle}>{lecture?.title || 'Lecture Workspace'}</h1>
@@ -381,34 +467,73 @@ export default function PostLectureHub() {
 
           {/* Export Action Bar */}
           <div style={styles.exportBar}>
-            <span style={styles.exportLabel}>EXPORT PDF:</span>
+            <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700', letterSpacing: '0.04em' }}>EXPORT PDF:</span>
             <div style={styles.exportBtnGroup}>
               <a
                 href={aiApi.getPdfUrl(lectureId, 'transcript')}
                 download
                 onClick={() => handlePdfClick('transcript')}
-                style={styles.exportBtn}
+                style={{
+                  textDecoration: 'none',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: '#cbd5e1',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
                 title="Download full transcript PDF"
               >
-                📄 Transcript
+                <span>Transcript</span>
+                <span aria-hidden="true">↗</span>
               </a>
               <a
                 href={aiApi.getPdfUrl(lectureId, 'summary')}
                 download
                 onClick={() => handlePdfClick('summary')}
-                style={styles.exportBtn}
+                style={{
+                  textDecoration: 'none',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: '#cbd5e1',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
                 title="Download executive summary PDF"
               >
-                📊 Summary
+                <span>Summary</span>
+                <span aria-hidden="true">↗</span>
               </a>
               <a
                 href={aiApi.getPdfUrl(lectureId, 'study-notes')}
                 download
                 onClick={() => handlePdfClick('study-notes')}
-                style={styles.exportBtnPrimary}
+                style={{
+                  textDecoration: 'none',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  color: '#38bdf8',
+                  background: 'rgba(2, 132, 199, 0.15)',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
                 title="Download formatted KaTeX notes with diagrams"
               >
-                📑 Study Notes
+                <span>Study Notes</span>
+                <span aria-hidden="true">↗</span>
               </a>
             </div>
           </div>
@@ -425,30 +550,56 @@ export default function PostLectureHub() {
       <nav style={styles.tabNav} aria-label="Lecture study tabs">
         <div style={styles.tabNavContainer}>
           {[
-            { id: 'recording', label: '🎥 Video & Chapters', count: chapters.length },
-            { id: 'transcript', label: '🔍 Transcript', count: transcriptSegments.length },
-            { id: 'summary', label: '🧠 AI Summary' },
-            { id: 'notes', label: '📝 Study Notes' },
-            { id: 'rag', label: '💬 Ask Lecture (RAG)', count: ragHistory.length },
-            { id: 'quiz', label: '🎯 Quiz & Flashcards', count: flashcards.length },
-            { id: 'board', label: '📐 Whiteboard OCR', count: boardContents.length },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                ...styles.tabPill,
-                ...(activeTab === tab.id ? styles.tabPillActive : {}),
-              }}
-              aria-selected={activeTab === tab.id}
-              role="tab"
-            >
-              <span>{tab.label}</span>
-              {tab.count != null && tab.count > 0 && (
-                <span style={styles.tabBadge(activeTab === tab.id)}>{tab.count}</span>
-              )}
-            </button>
-          ))}
+            { id: 'recording', label: 'Video and Chapters', count: chapters.length },
+            { id: 'transcript', label: 'Transcript', count: transcriptSegments.length },
+            { id: 'summary', label: 'Summary' },
+            { id: 'notes', label: 'Study Notes' },
+            { id: 'visualizations', label: 'Explore Visually', count: visualizationData?.recommendedVisualizationsCount || 0 },
+            { id: 'rag', label: 'Ask This Lecture', count: ragHistory.length },
+            { id: 'quiz', label: 'Quiz and Flashcards', count: flashcards.length },
+            { id: 'board', label: 'Whiteboard & Slides', count: boardContents.length },
+          ].map((tab) => {
+            const isTabActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '10px',
+                  background: isTabActive ? 'rgba(2, 132, 199, 0.2)' : 'rgba(15, 23, 42, 0.6)',
+                  border: isTabActive ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.08)',
+                  color: isTabActive ? '#ffffff' : '#94a3b8',
+                  fontSize: '13px',
+                  fontWeight: isTabActive ? '700' : '600',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.18s ease',
+                }}
+                aria-selected={isTabActive}
+                role="tab"
+              >
+                <span>{tab.label}</span>
+                {tab.count != null && tab.count > 0 && (
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      padding: '1px 6px',
+                      borderRadius: '5px',
+                      background: isTabActive ? 'rgba(56, 189, 248, 0.25)' : 'rgba(255, 255, 255, 0.08)',
+                      color: isTabActive ? '#38bdf8' : '#94a3b8',
+                      fontWeight: '700',
+                    }}
+                  >
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </nav>
 
@@ -776,7 +927,126 @@ export default function PostLectureHub() {
               <StudyNotesViewer
                 studyNotes={studyNotes}
                 isLoading={isGeneratingNotes}
+                onLaunchVisualizer={handleLaunchVisualizerForTopic}
               />
+            </div>
+          </div>
+        )}
+
+        {/* 4.5. Topic-Aware Adaptive Visualization Tab */}
+        {activeTab === 'visualizations' && (
+          <div style={styles.tabPane}>
+            <div className="glass-panel" style={{ padding: '24px', borderRadius: '18px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Header */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '28px' }} aria-hidden="true">🔬</span>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#ffffff', margin: 0 }}>
+                        Lecture-Specific Visual Learning Suite
+                      </h2>
+                      <Badge variant="cyan" size="sm">Adaptive Engine</Badge>
+                    </div>
+                    <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>
+                      Pedagogical simulations and 2D schematics calibrated strictly to the concepts taught in this lecture.
+                    </p>
+                  </div>
+                </div>
+
+                {selectedVizTopicId && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/lab?lectureId=${lectureId}&topicId=${selectedVizTopicId}`)}
+                    style={{ whiteSpace: 'nowrap' }}
+                    title="Open this lecture topic in full-screen 3D Lab"
+                  >
+                    Open in Fullscreen 3D Lab ↗
+                  </Button>
+                )}
+              </div>
+
+              {/* Topics Selection Bar for this specific lecture */}
+              {visualizationData?.topics?.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Topics Evaluated for Visual Benefit in This Lecture ({visualizationData.topics.length}):
+                  </span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {visualizationData.topics.map((top) => {
+                      const isSelected = selectedVizTopicId === top.topicId;
+                      const is3D = top.suitabilityCategory === 'CATEGORY_A';
+                      const is2D = top.suitabilityCategory === 'CATEGORY_B';
+
+                      return (
+                        <button
+                          key={top.topicId}
+                          onClick={() => setSelectedVizTopicId(top.topicId)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '8px 14px',
+                            borderRadius: '10px',
+                            background: isSelected
+                              ? 'linear-gradient(135deg, rgba(2, 132, 199, 0.25) 0%, rgba(37, 99, 235, 0.25) 100%)'
+                              : 'rgba(15, 23, 42, 0.6)',
+                            border: isSelected ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.08)',
+                            color: isSelected ? '#ffffff' : '#94a3b8',
+                            fontSize: '12.5px',
+                            fontWeight: isSelected ? '700' : '500',
+                            cursor: 'pointer',
+                            transition: 'all 0.18s ease',
+                          }}
+                        >
+                          <span>{is3D ? '⚡' : is2D ? '📐' : '📖'}</span>
+                          <span>{top.topicTitle}</span>
+                          <span
+                            style={{
+                              fontSize: '10px',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              background: is3D ? 'rgba(56, 189, 248, 0.15)' : is2D ? 'rgba(16, 185, 129, 0.15)' : 'rgba(148, 163, 184, 0.1)',
+                              color: is3D ? '#38bdf8' : is2D ? '#34d399' : '#94a3b8',
+                              fontWeight: '700',
+                            }}
+                          >
+                            {is3D ? '3D' : is2D ? '2D' : 'Theory'}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Zero Recommended Visualizations (Category C) Notice */}
+              {visualizationData?.recommendedVisualizationsCount === 0 && (
+                <div style={{ background: 'rgba(15, 23, 42, 0.5)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '14px', padding: '24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '36px' }}>📖</span>
+                  <h3 style={{ fontSize: '17px', fontWeight: '700', color: '#ffffff', margin: 0 }}>
+                    No Forced Visualizations for this Lecture
+                  </h3>
+                  <p style={{ fontSize: '13px', color: '#94a3b8', maxWidth: '520px', lineHeight: 1.55, margin: 0 }}>
+                    In accordance with LectureLens pedagogical standards, topics in this lecture consist of fundamental theoretical principles and definitions. They are best understood through structured notes, mathematical derivations, and review questions without redundant visual distraction.
+                  </p>
+                  <Button variant="primary" size="sm" onClick={() => setActiveTab('notes')} style={{ marginTop: '8px' }}>
+                    Jump to Study Notes →
+                  </Button>
+                </div>
+              )}
+
+              {/* Visualizer Host */}
+              {activeVizItem && (
+                <LectureVisualizerHost
+                  lectureId={lectureId}
+                  lectureTitle={lecture?.title}
+                  visualization={activeVizItem}
+                  onJumpTimestamp={jumpToTimestamp}
+                  onReturnToLecture={() => setActiveTab('notes')}
+                />
+              )}
             </div>
           </div>
         )}

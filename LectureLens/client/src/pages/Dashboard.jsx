@@ -6,9 +6,9 @@ import Badge from '../components/Badge';
 import Button from '../components/Button';
 
 /**
- * Premium, mobile-first Dashboard tailored to student vs. instructor roles.
- * Provides live room status, real-time filtering, accessible touch controls,
- * and zero horizontal scroll overflow.
+ * Reference-Inspired Content-Driven Dashboard
+ * Editorial layout with numbered eyebrows, minimal bracket tags,
+ * continue-learning spotlight card, and distinct lecture workspaces.
  */
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -21,7 +21,7 @@ export default function Dashboard() {
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('ALL'); // 'ALL' | 'LIVE' | 'COMPLETED' | 'PUBLIC' | 'PRIVATE'
+  const [activeFilter, setActiveFilter] = useState('ALL');
 
   // Create lecture modal
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -95,13 +95,15 @@ export default function Dashboard() {
       if (!targetRoomId) throw new Error('Server did not return a valid Room Code');
       navigate(`/room/${targetRoomId}?role=host`);
     } catch (err) {
-      if (err.response?.status === 401 || err.response?.status === 403) {
+      if (err.response?.status === 401) {
         alert('Your session has expired. Please sign in again.');
         authApi.logout();
         navigate('/login');
-        return;
+      } else if (err.response?.status === 403) {
+        alert(err.response?.data?.error || 'Access denied: Teacher or Administrator account required to create lectures.');
+      } else {
+        alert(err.response?.data?.error || err.message || 'Failed to create lecture session');
       }
-      alert(err.response?.data?.error || err.message || 'Failed to create lecture');
     } finally {
       setCreateLoading(false);
     }
@@ -109,11 +111,8 @@ export default function Dashboard() {
 
   const handleJoinByCode = () => {
     const code = joinCode.trim().toUpperCase();
-    if (!code) return setJoinError('Please enter a room code');
-    if (code.length < 4) return setJoinError('Code must be at least 4 characters');
-    const matched = lectures.find((l) => (l.room_id || l.roomId) === code);
-    if (matched && (matched.status === 'ENDED' || matched.status === 'COMPLETED')) {
-      navigate(`/lecture/${matched.id || matched.lectureId}/review`);
+    if (!code) {
+      setJoinError('Please enter an 8-character room code');
       return;
     }
     navigate(`/room/${code}?role=participant`);
@@ -122,29 +121,21 @@ export default function Dashboard() {
   const handleOpenLecture = (lec) => {
     const lecId = lec.id || lec.lectureId;
     const roomCode = lec.room_id || lec.roomId;
-    if (lec.status === 'ENDED' || lec.status === 'COMPLETED') {
-      navigate(`/lecture/${lecId}/review`);
-    } else if (lec.status === 'LIVE') {
+    if (lec.status === 'LIVE') {
       navigate(`/room/${roomCode}?role=${isTeacher ? 'host' : 'participant'}`);
     } else {
-      if (isTeacher) {
-        navigate(`/room/${roomCode}?role=host`);
-      } else {
-        navigate(`/lecture/${lecId}/review`);
-      }
+      navigate(`/lecture/${lecId}/review`);
     }
   };
 
   // Real filtered lectures derived from local state
   const filteredLectures = useMemo(() => {
     return lectures.filter((lec) => {
-      // Status & visibility filter
       if (activeFilter === 'LIVE' && lec.status !== 'LIVE') return false;
       if (activeFilter === 'COMPLETED' && lec.status !== 'ENDED' && lec.status !== 'COMPLETED') return false;
       if (activeFilter === 'PUBLIC' && lec.visibility !== 'PUBLIC') return false;
       if (activeFilter === 'PRIVATE' && lec.visibility !== 'PRIVATE') return false;
 
-      // Text search
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const t = (lec.title || '').toLowerCase();
@@ -164,270 +155,301 @@ export default function Dashboard() {
     [lectures]
   );
 
+  // Identify featured lecture (prefer live, then newest completed)
+  const featuredLecture = useMemo(() => {
+    const live = lectures.find((l) => l.status === 'LIVE');
+    if (live) return live;
+    return lectures[0] || null;
+  }, [lectures]);
+
   return (
     <div style={styles.pageContainer}>
       <Navbar />
 
       <main id="main-content" style={styles.mainContent}>
-        <div style={styles.container}>
-          {/* ── Command Center Hero ── */}
-          <section style={styles.heroCard} className="glass-panel-elevated">
-            <div style={styles.heroTopRow}>
-              <div>
-                <div style={styles.roleTagWrap}>
-                  <Badge variant={isTeacher ? 'cyan' : 'emerald'} size="md">
-                    {isTeacher ? 'Instructor Command Center' : 'Student Learning Hub'}
-                  </Badge>
-                  {liveCount > 0 && (
-                    <Badge variant="rose" size="md" icon="🔴">
-                      {liveCount} Session{liveCount > 1 ? 's' : ''} Live Now
-                    </Badge>
-                  )}
-                </div>
+        {/* Academic Eyebrow Breadcrumb */}
+        <div style={styles.headerRow}>
+          <div className="editorial-eyebrow">
+            <span className="eyebrow-num">📚</span>
+            <span>ACADEMIC WORKSPACE</span>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#94a3b8' }}>
+              {lectures.length} {lectures.length === 1 ? 'Lecture' : 'Lectures'} Available
+            </span>
+            {liveCount > 0 && (
+              <span style={{ fontSize: '12px', fontWeight: '700', color: '#f87171', background: 'rgba(239, 68, 68, 0.12)', padding: '2px 8px', borderRadius: '6px' }}>
+                🔴 {liveCount} Live
+              </span>
+            )}
+          </div>
+        </div>
 
-                <h1 style={styles.heroTitle}>
-                  {isTeacher ? 'Host & Orchestrate AI Classrooms' : 'Your Enrolled Classrooms & Notes'}
-                </h1>
-                <p style={styles.heroSubtitle}>
-                  {isTeacher
-                    ? 'Launch live sessions with real-time speech transcription, whiteboard OCR, and automated study notes synthesis.'
-                    : 'Join ongoing interactive lectures, review synthesized KaTeX notes, take quizzes, and master spaced-repetition flashcards.'}
-                </p>
+        {/* Header Hero */}
+        <div style={styles.heroRow}>
+          <div>
+            <h1 style={styles.heroTitle}>
+              {isTeacher ? 'Instructor Classroom Hub' : 'My Learning Workspace'}
+              <span style={styles.heroSubtitle}>
+                {isTeacher
+                  ? 'Host live interactive sessions, share screen feeds, and generate verified study notes'
+                  : 'Review lecture notes, practice with quizzes and flashcards, and explore visual simulations'}
+              </span>
+            </h1>
+          </div>
+
+          {isTeacher && (
+            <Button
+              onClick={() => setShowCreateModal(true)}
+              variant="primary"
+              size="md"
+              icon="➕"
+              style={{ alignSelf: 'flex-start' }}
+            >
+              Host New Lecture
+            </Button>
+          )}
+        </div>
+
+        {/* Featured Spotlight Card (Continue Learning) */}
+        {featuredLecture && !searchQuery && activeFilter === 'ALL' && (
+          <section style={styles.featuredSection} aria-label="Featured Lecture Spotlight">
+            <div className="editorial-card" style={styles.featuredCard}>
+              <div style={styles.featuredHeader}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: '700', color: featuredLecture.status === 'LIVE' ? '#f87171' : '#38bdf8' }}>
+                    {featuredLecture.status === 'LIVE' ? '🔴 LIVE NOW' : '⚡ CONTINUE LEARNING'}
+                  </span>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>•</span>
+                  <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>
+                    Room: {featuredLecture.room_id || featuredLecture.roomId}
+                  </span>
+                </div>
+                <span className="handwritten-note">(pick up right where you left off ↗)</span>
               </div>
 
-              {/* Primary Action Button */}
-              {isTeacher && (
-                <div style={styles.heroPrimaryAction}>
+              <div style={styles.featuredBody}>
+                <div>
+                  <h2 style={styles.featuredTitle}>{featuredLecture.title}</h2>
+                  <p style={styles.featuredDesc}>
+                    {featuredLecture.description || 'Multimodal university lecture session.'}
+                  </p>
+                  <div style={styles.metaRow}>
+                    <span style={styles.metaItem}>👨‍🏫 {featuredLecture.host_name || 'Instructor'}</span>
+                    <span style={styles.metaItem}>🗓️ {featuredLecture.created_at ? new Date(featuredLecture.created_at).toLocaleDateString() : 'Active'}</span>
+                  </div>
+                </div>
+
+                <div style={styles.featuredActions}>
                   <Button
-                    onClick={() => setShowCreateModal(true)}
-                    variant="primary"
-                    size="lg"
-                    icon="➕"
-                    style={{ whiteSpace: 'nowrap', width: '100%' }}
+                    onClick={() => handleOpenLecture(featuredLecture)}
+                    variant={featuredLecture.status === 'LIVE' ? 'emerald' : 'primary'}
+                    size="md"
                   >
-                    Host New Lecture
+                    {featuredLecture.status === 'LIVE' ? '🔴 Join Live Classroom →' : 'Open Workspace →'}
+                  </Button>
+                  <Button
+                    onClick={() => navigate(`/lecture/${featuredLecture.id || featuredLecture.lectureId}/review`)}
+                    variant="outline"
+                    size="md"
+                  >
+                    Study Notes & Quizzes 📑
                   </Button>
                 </div>
-              )}
+              </div>
             </div>
+          </section>
+        )}
 
-            {/* Quick Access Join Box & Live Stats */}
-            <div style={styles.heroMetricsAndJoin}>
-              {/* Join Box */}
-              <div style={styles.joinBox} className="dash-join-box">
-                <div style={styles.joinInputWrap}>
-                  <span style={styles.joinInputIcon} aria-hidden="true">🔑</span>
-                  <input
-                    aria-label="Enter room code to join"
-                    placeholder="Enter 8-digit Room Code (e.g. MATH101)"
-                    value={joinCode}
-                    onChange={(e) => {
-                      setJoinCode(e.target.value);
-                      if (joinError) setJoinError('');
-                    }}
-                    onKeyDown={(e) => e.key === 'Enter' && handleJoinByCode()}
-                    style={styles.joinInput}
-                  />
-                </div>
-                <Button
-                  onClick={handleJoinByCode}
-                  variant="emerald"
-                  size="md"
-                  style={{ minWidth: '120px' }}
-                >
-                  Join Room
+        {/* Editorial Two-Column Split */}
+        <div style={styles.splitLayout}>
+          {/* Left Column: Quick Join & Lab Shortcut */}
+          <aside style={styles.leftCol}>
+            {/* Quick Access Card */}
+            <div className="editorial-card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span className="editorial-eyebrow">
+                  <span className="eyebrow-num">⚡</span>
+                  <span>JOIN A CLASSROOM</span>
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  aria-label="Enter room code to join"
+                  placeholder="8-char code (e.g. MATH101)"
+                  value={joinCode}
+                  onChange={(e) => {
+                    setJoinCode(e.target.value);
+                    if (joinError) setJoinError('');
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleJoinByCode()}
+                  style={styles.sidebarInput}
+                />
+                <Button onClick={handleJoinByCode} variant="emerald" size="sm">
+                  Join →
                 </Button>
               </div>
+              {joinError && <p style={{ color: '#f87171', fontSize: '12px', margin: 0 }}>⚠️ {joinError}</p>}
+            </div>
 
-              {/* Real Metric Indicators */}
-              <div style={styles.metricsPillsRow}>
-                <div style={styles.metricPill}>
-                  <span style={styles.metricNumber}>{lectures.length}</span>
-                  <span style={styles.metricLabel}>Total Sessions</span>
+            {/* Simulations Lab Card */}
+            <div className="editorial-card" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span className="editorial-eyebrow">
+                  <span className="eyebrow-num">🔬</span>
+                  <span>VISUAL LAB</span>
+                </span>
+              </div>
+              <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#ffffff', margin: 0 }}>
+                Interactive Simulations
+              </h3>
+              <p style={{ fontSize: '12.5px', color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>
+                Step through 3D distributed consensus clusters, AVL balance rotations, and neural feedforward propagation.
+              </p>
+              <Button onClick={() => navigate('/lab')} variant="outline" size="sm" style={{ alignSelf: 'flex-start', marginTop: '4px' }}>
+                Open Simulations Lab →
+              </Button>
+            </div>
+
+            {/* Learning Overview */}
+            <div className="editorial-card" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <span className="editorial-eyebrow">
+                <span className="eyebrow-num">📊</span>
+                <span>LEARNING OVERVIEW</span>
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                  <span style={{ color: '#94a3b8' }}>Total Lectures:</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '700', color: '#ffffff' }}>{lectures.length}</span>
                 </div>
-                <div style={styles.metricPill}>
-                  <span style={{ ...styles.metricNumber, color: '#f87171' }}>{liveCount}</span>
-                  <span style={styles.metricLabel}>Live Now</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                  <span style={{ color: '#94a3b8' }}>Active Live Broadcasts:</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '700', color: liveCount > 0 ? '#f87171' : '#64748b' }}>{liveCount}</span>
                 </div>
-                <div style={styles.metricPill}>
-                  <span style={{ ...styles.metricNumber, color: '#34d399' }}>{completedCount}</span>
-                  <span style={styles.metricLabel}>Study Ready</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                  <span style={{ color: '#94a3b8' }}>Study Notes Ready:</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '700', color: '#34d399' }}>{completedCount}</span>
                 </div>
               </div>
-            </div>
 
-            {joinError && <p style={styles.errorText} role="alert">⚠️ {joinError}</p>}
-          </section>
-
-          {/* ── 3D Educational Visualization Lab Quick Access Banner ── */}
-          <section
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '16px',
-              padding: '16px 20px',
-              borderRadius: '16px',
-              background: 'linear-gradient(135deg, rgba(8, 145, 178, 0.12) 0%, rgba(99, 102, 241, 0.08) 100%)',
-              border: '1px solid rgba(56, 189, 248, 0.25)',
-              flexWrap: 'wrap',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: '240px', flex: 1 }}>
-              <span style={{ fontSize: '28px' }} aria-hidden="true">🔬</span>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                  <span style={{ fontWeight: '700', fontSize: '15px', color: '#f8fafc' }}>
-                    Interactive 3D Educational Lab
-                  </span>
-                  <Badge variant="cyan" size="sm">New</Badge>
-                  <Badge variant="neutral" size="sm">Three.js</Badge>
-                </div>
-                <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8', lineHeight: 1.4 }}>
-                  Master complex CS concepts in 3D: Raft leader elections & quorum arithmetic, AVL tree rotations, and neural network matrix multiplication.
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="md"
-              onClick={() => navigate('/lab')}
-              aria-label="Launch 3D Educational Visualization Lab"
-            >
-              Open 3D Lab →
-            </Button>
-          </section>
-
-          {/* ── Search & Filter Controls ── */}
-          <section style={styles.controlBar} className="dash-control-bar">
-            {/* Search Input */}
-            <div style={styles.searchWrap}>
-              <span style={styles.searchIcon} aria-hidden="true">🔍</span>
-              <input
-                type="search"
-                aria-label="Search lectures by title or instructor"
-                placeholder="Search lectures by title, topic, or instructor..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={styles.searchInput}
-              />
-            </div>
-
-            {/* Filter Pills */}
-            <div style={styles.filterGroup} role="group" aria-label="Filter lectures">
-              {[
-                { id: 'ALL', label: `All (${lectures.length})` },
-                { id: 'LIVE', label: `🔴 Live (${liveCount})` },
-                { id: 'COMPLETED', label: `✅ Done (${completedCount})` },
-                { id: 'PUBLIC', label: 'Public' },
-                { id: 'PRIVATE', label: 'Private' },
-              ].map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => setActiveFilter(f.id)}
-                  style={{
-                    ...styles.filterChip,
-                    ...(activeFilter === f.id ? styles.filterChipActive : {}),
-                  }}
-                  aria-pressed={activeFilter === f.id}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Auxiliary actions */}
-            <div style={styles.auxActions}>
-              <button
-                onClick={fetchLectures}
-                style={styles.refreshBtn}
-                title="Refresh lecture list"
-                aria-label="Refresh lecture list"
-              >
-                🔄 Refresh
-              </button>
               {isTeacher && lectures.length > 0 && (
                 <button
                   onClick={handleClearAllLectures}
-                  style={styles.clearBtn}
-                  title="Clear all lecture history"
-                  aria-label="Clear all lecture history"
+                  style={styles.clearAllBtn}
+                  title="Permanently remove all lecture history"
                 >
-                  🗑️ Clear All
+                  🗑️ Clear All Lecture History
                 </button>
               )}
             </div>
-          </section>
+          </aside>
 
-          {/* ── Lecture Cards Grid ── */}
-          <section aria-label="Lecture Sessions List">
+          {/* Right Column: Search, Filter & Content-Driven Lecture Feed */}
+          <section style={styles.rightCol} aria-label="Lectures Catalog">
+            {/* Control Bar: Search + Filter Chips */}
+            <div style={styles.filterControlBar}>
+              <div style={styles.searchContainer}>
+                <span style={styles.searchIcon} aria-hidden="true">🔍</span>
+                <input
+                  type="search"
+                  aria-label="Search lectures"
+                  placeholder="Search by lecture title, topic, or instructor..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={styles.searchInput}
+                />
+              </div>
+
+              <div style={styles.filterChipsRow}>
+                {[
+                  { id: 'ALL', label: `All (${lectures.length})` },
+                  { id: 'LIVE', label: `🔴 Live (${liveCount})` },
+                  { id: 'COMPLETED', label: `Study Ready (${completedCount})` },
+                  { id: 'PUBLIC', label: 'Public' },
+                  { id: 'PRIVATE', label: 'Private' },
+                ].map((f) => {
+                  const isActive = activeFilter === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => setActiveFilter(f.id)}
+                      style={{
+                        cursor: 'pointer',
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        border: isActive ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.1)',
+                        background: isActive ? 'rgba(2, 132, 199, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+                        color: isActive ? '#38bdf8' : '#94a3b8',
+                        transition: 'all 0.18s',
+                      }}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Lecture Items List */}
             {loading ? (
-              <div style={styles.loadingState}>
+              <div style={styles.loadingBox}>
                 <div style={styles.spinner} aria-hidden="true" />
-                <p style={{ color: '#94a3b8', fontSize: '15px' }}>Retrieving lecture sessions…</p>
+                <p style={{ color: '#94a3b8', fontSize: '14px', fontFamily: 'var(--font-mono)' }}>Loading catalog sessions...</p>
               </div>
             ) : filteredLectures.length === 0 ? (
-              <div style={styles.emptyState} className="glass-panel">
-                <span style={{ fontSize: '48px', marginBottom: '8px' }} aria-hidden="true">📭</span>
-                <h2 style={styles.emptyTitle}>
+              <div className="editorial-card" style={styles.emptyCard}>
+                <span style={{ fontSize: '36px' }}>📭</span>
+                <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#ffffff', margin: 0 }}>
                   {searchQuery || activeFilter !== 'ALL'
-                    ? 'No lectures match your search or filter'
+                    ? 'No lectures match your search filter'
                     : 'No lecture sessions recorded yet'}
-                </h2>
-                <p style={styles.emptyDesc}>
-                  {searchQuery || activeFilter !== 'ALL'
-                    ? 'Try clearing the search query or changing your filter criteria.'
-                    : isTeacher
-                    ? 'Click the button below to start broadcasting your first live classroom session.'
-                    : 'Check back soon or ask your instructor for an 8-digit room code to join.'}
+                </h3>
+                <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0, maxWidth: '400px' }}>
+                  {isTeacher
+                    ? 'Host a session to start broadcasting live WebRTC video, subtitles, and notes.'
+                    : 'Enter an 8-character room code on the left to join an active classroom.'}
                 </p>
-                {isTeacher && !searchQuery && activeFilter === 'ALL' && (
-                  <Button
-                    onClick={() => setShowCreateModal(true)}
-                    variant="primary"
-                    size="md"
-                    icon="➕"
-                    style={{ marginTop: '16px' }}
-                  >
-                    Host Your First Lecture
+                {isTeacher && (
+                  <Button onClick={() => setShowCreateModal(true)} variant="primary" size="sm" style={{ marginTop: '8px' }}>
+                    Host First Session →
                   </Button>
                 )}
               </div>
             ) : (
-              <div style={styles.lectureGrid} className="dash-lecture-grid">
+              <div style={styles.lectureList}>
                 {filteredLectures.map((lec) => {
                   const lecId = lec.id || lec.lectureId;
                   const roomCode = lec.room_id || lec.roomId;
                   const isLive = lec.status === 'LIVE';
-                  const isDone = lec.status === 'ENDED' || lec.status === 'COMPLETED';
 
                   return (
                     <article
                       key={lecId}
-                      style={styles.lectureCard}
-                      className="glass-panel dash-card"
+                      className="editorial-card"
+                      style={styles.lectureItem}
                       onClick={() => handleOpenLecture(lec)}
                       tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleOpenLecture(lec);
-                        }
-                      }}
-                      aria-label={`${lec.title}, status: ${lec.status}`}
+                      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleOpenLecture(lec)}
                     >
-                      {/* Card Top: Badges & Delete */}
-                      <div style={styles.cardHeader}>
-                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                          <Badge
-                            variant={isLive ? 'rose' : isDone ? 'emerald' : 'amber'}
-                            size="sm"
-                          >
-                            {isLive ? '🔴 LIVE' : isDone ? '✅ COMPLETED' : '⏳ SCHEDULED'}
-                          </Badge>
-                          <Badge variant="neutral" size="sm">
-                            {lec.visibility || 'PUBLIC'}
-                          </Badge>
+                      <div style={styles.itemHeader}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span className={`bracket-tag ${isLive ? 'bracket-tag-amber' : 'bracket-tag-emerald'}`}>
+                            {isLive ? '🔴 LIVE NOW' : '✅ COMPLETED'}
+                          </span>
+                          <span className="bracket-tag">[{lec.visibility || 'PUBLIC'}]</span>
+                          {roomCode && (
+                            <button
+                              onClick={(e) => handleCopyCode(e, roomCode)}
+                              style={styles.codePillBtn}
+                              title="Click to copy room code"
+                            >
+                              <span>CODE: {roomCode}</span>
+                              <span aria-hidden="true">{copiedCodeId === roomCode ? '✓' : '📋'}</span>
+                            </button>
+                          )}
                         </div>
 
                         {isTeacher && (
@@ -436,8 +458,8 @@ export default function Dashboard() {
                               e.stopPropagation();
                               setDeleteConfirm(lecId);
                             }}
-                            style={styles.deleteCardBtn}
-                            title="Delete this lecture session"
+                            style={styles.deleteBtn}
+                            title="Delete this lecture"
                             aria-label={`Delete ${lec.title}`}
                           >
                             ✕
@@ -445,117 +467,34 @@ export default function Dashboard() {
                         )}
                       </div>
 
-                      {/* Title & Description */}
-                      <h3 style={styles.cardTitle}>{lec.title}</h3>
-                      <p style={styles.cardDesc}>
-                        {lec.description || 'Multimodal university lecture session.'}
-                      </p>
+                      <div style={styles.itemContent}>
+                        <h3 style={styles.itemTitle}>{lec.title}</h3>
+                        <p style={styles.itemDesc}>
+                          {lec.description || 'Multimodal university lecture session.'}
+                        </p>
 
-                      {/* Instructor & Date Meta */}
-                      <div style={styles.metaRow}>
-                        <span style={styles.metaItem}>
-                          <span aria-hidden="true">👨‍🏫</span> {lec.host_name || 'Instructor'}
-                        </span>
-                        <span style={styles.metaItem}>
-                          <span aria-hidden="true">🗓️</span>{' '}
-                          {lec.created_at ? new Date(lec.created_at).toLocaleDateString() : 'Active'}
-                        </span>
+                        <div style={styles.metaRow}>
+                          <span style={styles.metaItem}>👨‍🏫 {lec.host_name || 'Instructor'}</span>
+                          <span style={styles.metaItem}>🗓️ {lec.created_at ? new Date(lec.created_at).toLocaleDateString() : 'Active'}</span>
+                        </div>
                       </div>
 
-                      {/* Room Code Badge (when active) */}
-                      {roomCode && (
-                        <div
-                          style={styles.codeRow}
-                          onClick={(e) => e.stopPropagation()}
-                          role="region"
-                          aria-label="Room code"
+                      {/* Action Pill Cluster */}
+                      <div style={styles.itemActions} onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          onClick={() => handleOpenLecture(lec)}
+                          variant={isLive ? 'emerald' : 'primary'}
+                          size="sm"
                         >
-                          <div style={styles.codeText}>
-                            <span style={styles.codePrefix}>CODE:</span>
-                            <span style={styles.codeValue}>{roomCode}</span>
-                          </div>
-                          <button
-                            onClick={(e) => handleCopyCode(e, roomCode)}
-                            style={styles.copyBtn}
-                            aria-label={`Copy room code ${roomCode}`}
-                          >
-                            {copiedCodeId === roomCode ? '✓ Copied!' : '📋 Copy'}
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Action Controls */}
-                      <div
-                        style={styles.actionRow}
-                        className="dash-card-actions"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {isLive ? (
-                          <>
-                            <Button
-                              onClick={() =>
-                                navigate(`/room/${roomCode}?role=${isTeacher ? 'host' : 'participant'}`)
-                              }
-                              variant="emerald"
-                              size="sm"
-                              style={{ flex: 1 }}
-                            >
-                              🔴 {isTeacher ? 'Return to Room' : 'Join Live'}
-                            </Button>
-                            <Button
-                              onClick={() => navigate(`/lecture/${lecId}/review`)}
-                              variant="secondary"
-                              size="sm"
-                              style={{ flex: 1 }}
-                            >
-                              📖 AI Notes
-                            </Button>
-                          </>
-                        ) : isDone ? (
-                          <>
-                            <Button
-                              onClick={() => navigate(`/lecture/${lecId}/review`)}
-                              variant="primary"
-                              size="sm"
-                              style={{ flex: 1 }}
-                            >
-                              📖 AI Notes & Review
-                            </Button>
-                            {isTeacher && (
-                              <Button
-                                onClick={() => navigate(`/room/${roomCode}?role=host`)}
-                                variant="secondary"
-                                size="sm"
-                                title="Reopen live classroom session"
-                              >
-                                🔁 Reopen
-                              </Button>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            {isTeacher ? (
-                              <Button
-                                onClick={() => navigate(`/room/${roomCode}?role=host`)}
-                                variant="primary"
-                                size="sm"
-                                style={{ flex: 1 }}
-                              >
-                                ▶️ Start Lecture
-                              </Button>
-                            ) : (
-                              <span style={styles.scheduledNotice}>⏳ Session scheduled</span>
-                            )}
-                            <Button
-                              onClick={() => navigate(`/lecture/${lecId}/review`)}
-                              variant="secondary"
-                              size="sm"
-                              style={{ flex: 1 }}
-                            >
-                              📖 Overview
-                            </Button>
-                          </>
-                        )}
+                          {isLive ? '🔴 Join Live Room →' : 'Study Notes 📑'}
+                        </Button>
+                        <Button
+                          onClick={() => navigate(`/lecture/${lecId}/review`)}
+                          variant="outline"
+                          size="sm"
+                        >
+                          Review Hub ↗
+                        </Button>
                       </div>
                     </article>
                   );
@@ -564,143 +503,92 @@ export default function Dashboard() {
             )}
           </section>
         </div>
-      </main>
 
-      {/* ── Create Lecture Modal ── */}
-      {showCreateModal && (
-        <div
-          style={styles.modalOverlay}
-          onClick={() => setShowCreateModal(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="create-lecture-title"
-        >
-          <div style={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.modalHeader}>
-              <h2 id="create-lecture-title" style={styles.modalTitle}>Host a New Lecture</h2>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                style={styles.modalCloseBtn}
-                aria-label="Close modal"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateLecture} style={styles.modalForm}>
-              <div style={styles.modalField}>
-                <label htmlFor="create-title" style={styles.label}>
-                  Lecture Title <span style={styles.requiredStar}>*</span>
-                </label>
-                <input
-                  id="create-title"
-                  placeholder="e.g. Distributed Consensus & Raft Protocol"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  style={styles.input}
-                  required
-                  autoFocus
-                />
-              </div>
-
-              <div style={styles.modalField}>
-                <label htmlFor="create-desc" style={styles.label}>
-                  Description & Syllabus Topics
-                </label>
-                <textarea
-                  id="create-desc"
-                  placeholder="Summary of topics, algorithms, proofs, and expected learning outcomes..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  style={styles.textarea}
-                  rows={3}
-                />
-              </div>
-
-              <div style={styles.modalField}>
-                <label htmlFor="create-visibility" style={styles.label}>
-                  Access Visibility
-                </label>
-                <select
-                  id="create-visibility"
-                  value={visibility}
-                  onChange={(e) => setVisibility(e.target.value)}
-                  style={styles.select}
-                >
-                  <option value="PUBLIC">Public – Any enrolled student can join</option>
-                  <option value="PRIVATE">Private – Restricted to authorized participants</option>
-                </select>
-              </div>
-
-              <div style={styles.modalActions}>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="md"
-                  onClick={() => setShowCreateModal(false)}
-                  style={{ flex: 1 }}
-                >
+        {/* Delete Confirmation Modal */}
+        {deleteConfirm && (
+          <div style={styles.modalOverlay} role="dialog" aria-modal="true">
+            <div className="editorial-card" style={styles.modalCard}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#ffffff' }}>
+                Confirm Session Deletion
+              </h3>
+              <p style={{ margin: '8px 0 16px', fontSize: '13px', color: '#94a3b8', lineHeight: 1.5 }}>
+                Are you sure you want to delete this lecture? All transcripts, study notes, and whiteboard records will be permanently removed.
+              </p>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <Button onClick={() => setDeleteConfirm(null)} variant="secondary" size="sm">
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="md"
-                  loading={createLoading}
-                  disabled={createLoading}
-                  style={{ flex: 1 }}
-                >
-                  {createLoading ? 'Allocating Room…' : '🚀 Start Live Lecture'}
+                <Button onClick={() => handleDeleteLecture(deleteConfirm)} variant="rose" size="sm">
+                  Delete Permanently
                 </Button>
               </div>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ── Delete Confirmation Modal ── */}
-      {deleteConfirm && (
-        <div
-          style={styles.modalOverlay}
-          onClick={() => setDeleteConfirm(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-confirm-title"
-        >
-          <div style={{ ...styles.modalCard, maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontSize: '36px', textAlign: 'center', marginBottom: '8px' }} aria-hidden="true">
-              🗑️
-            </div>
-            <h2 id="delete-confirm-title" style={{ ...styles.modalTitle, textAlign: 'center' }}>
-              Delete Lecture Session?
-            </h2>
-            <p style={styles.deleteWarningText}>
-              This action permanently removes the session, transcript segments, AI study notes, and quiz records.
-              This cannot be undone.
-            </p>
-            <div style={styles.modalActions}>
-              <Button
-                type="button"
-                variant="secondary"
-                size="md"
-                onClick={() => setDeleteConfirm(null)}
-                style={{ flex: 1 }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="danger"
-                size="md"
-                onClick={() => handleDeleteLecture(deleteConfirm)}
-                style={{ flex: 1 }}
-              >
-                Permanently Delete
-              </Button>
+        {/* Host New Lecture Modal */}
+        {showCreateModal && (
+          <div style={styles.modalOverlay} role="dialog" aria-modal="true">
+            <div className="editorial-card" style={styles.modalCard}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <span className="editorial-eyebrow">
+                  <span className="eyebrow-num">01</span>
+                  <span>—</span>
+                  <span>NEW LECTURE BROADCAST</span>
+                </span>
+                <button onClick={() => setShowCreateModal(false)} style={styles.deleteBtn}>
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateLecture} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={styles.fieldLabel}>Lecture Title *</label>
+                  <input
+                    required
+                    placeholder="e.g. Distributed Systems: Raft Consensus"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    style={styles.modalInput}
+                  />
+                </div>
+
+                <div>
+                  <label style={styles.fieldLabel}>Course Description / Syllabus Topics</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Brief description of the topics covered in this lecture..."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    style={{ ...styles.modalInput, height: 'auto', resize: 'vertical' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={styles.fieldLabel}>Visibility</label>
+                  <select
+                    value={visibility}
+                    onChange={(e) => setVisibility(e.target.value)}
+                    style={styles.modalInput}
+                  >
+                    <option value="PUBLIC">PUBLIC (All Students)</option>
+                    <option value="PRIVATE">PRIVATE (Invited Only)</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
+                  <Button onClick={() => setShowCreateModal(false)} variant="secondary" size="md" type="button">
+                    Cancel
+                  </Button>
+                  <Button variant="primary" size="md" type="submit" disabled={createLoading}>
+                    {createLoading ? 'Initializing...' : 'Launch Live Classroom →'}
+                  </Button>
+                </div>
+              </form>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </main>
     </div>
   );
 }
@@ -708,372 +596,267 @@ export default function Dashboard() {
 const styles = {
   pageContainer: {
     minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    background: 'var(--bg-dark, #080c14)',
+    background: '#080c14',
+    color: '#f8fafc',
+    fontFamily: 'var(--font-body)',
+    paddingBottom: '100px',
   },
   mainContent: {
-    flex: 1,
-    padding: '24px 16px 64px',
-  },
-  container: {
-    maxWidth: '1280px',
+    maxWidth: '1240px',
     margin: '0 auto',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '24px',
+    padding: '32px 24px 60px',
   },
-  heroCard: {
-    padding: '28px 24px',
-    borderRadius: '20px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '20px',
-  },
-  heroTopRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: '20px',
-    flexWrap: 'wrap',
-  },
-  roleTagWrap: {
+  headerRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
-    marginBottom: '12px',
+    justifyContent: 'space-between',
     flexWrap: 'wrap',
+    gap: '12px',
+    marginBottom: '20px',
+    paddingBottom: '16px',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+  },
+  heroRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    flexWrap: 'wrap',
+    gap: '20px',
+    marginBottom: '32px',
   },
   heroTitle: {
-    fontSize: '28px',
-    fontWeight: '800',
-    color: '#ffffff',
+    fontFamily: 'var(--font-heading)',
+    fontSize: 'clamp(2rem, 3.8vw, 2.75rem)',
+    fontWeight: '900',
     letterSpacing: '-0.025em',
-    marginBottom: '8px',
-  },
-  heroSubtitle: {
-    fontSize: '14.5px',
-    color: '#94a3b8',
-    lineHeight: 1.55,
-    maxWidth: '780px',
-    margin: 0,
-  },
-  heroPrimaryAction: {
-    alignSelf: 'center',
-    minWidth: '200px',
-  },
-  heroMetricsAndJoin: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '20px',
-    paddingTop: '16px',
-    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-    flexWrap: 'wrap',
-  },
-  joinBox: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    flex: 1,
-    minWidth: '280px',
-    maxWidth: '540px',
-  },
-  joinInputWrap: {
-    flex: 1,
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-  },
-  joinInputIcon: {
-    position: 'absolute',
-    left: '12px',
-    fontSize: '14px',
-    color: '#64748b',
-    pointerEvents: 'none',
-  },
-  joinInput: {
-    width: '100%',
-    paddingLeft: '38px',
-    background: 'rgba(8, 12, 20, 0.8)',
-    border: '1px solid #1e293b',
-    borderRadius: '10px',
     color: '#ffffff',
-    fontSize: '13.5px',
-    minHeight: '44px',
-  },
-  metricsPillsRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    flexWrap: 'wrap',
-  },
-  metricPill: {
+    margin: 0,
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center',
-    padding: '8px 16px',
-    background: 'rgba(15, 23, 42, 0.6)',
-    border: '1px solid rgba(255, 255, 255, 0.07)',
-    borderRadius: '10px',
-    minWidth: '85px',
   },
-  metricNumber: {
-    fontSize: '18px',
-    fontWeight: '800',
-    color: '#38bdf8',
-    lineHeight: 1.2,
-  },
-  metricLabel: {
-    fontSize: '11px',
+  heroSubtitle: {
+    fontSize: '1rem',
+    fontWeight: '400',
     color: '#94a3b8',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
+    letterSpacing: 'normal',
+    marginTop: '6px',
   },
-  errorText: {
-    color: '#f87171',
-    fontSize: '12.5px',
-    fontWeight: '600',
-    margin: '-8px 0 0',
+  featuredSection: {
+    marginBottom: '36px',
   },
-  controlBar: {
+  featuredCard: {
+    padding: '24px',
     display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
     gap: '16px',
+    background: 'linear-gradient(135deg, rgba(13, 20, 36, 0.95) 0%, rgba(15, 23, 42, 0.85) 100%)',
+    borderLeft: '3px solid #38bdf8',
+  },
+  featuredHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '10px',
+  },
+  featuredBody: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '20px',
+  },
+  featuredTitle: {
+    fontFamily: 'var(--font-heading)',
+    fontSize: '1.45rem',
+    fontWeight: '800',
+    color: '#ffffff',
+    margin: '0 0 6px',
+  },
+  featuredDesc: {
+    fontSize: '0.9rem',
+    color: '#94a3b8',
+    margin: '0 0 10px',
+    maxWidth: '640px',
+    lineHeight: 1.5,
+  },
+  featuredActions: {
+    display: 'flex',
+    gap: '10px',
     flexWrap: 'wrap',
   },
-  searchWrap: {
-    position: 'relative',
+  splitLayout: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(280px, 320px) minmax(0, 1fr)',
+    gap: '28px',
+    alignItems: 'flex-start',
+  },
+  leftCol: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
+  },
+  sidebarInput: {
     flex: 1,
-    minWidth: '260px',
-    maxWidth: '440px',
+    height: '38px',
+    background: '#080c14',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: '8px',
+    color: '#ffffff',
+    fontFamily: 'var(--font-mono)',
+    fontSize: '12px',
+    padding: '0 10px',
+    outline: 'none',
+  },
+  clearAllBtn: {
+    background: 'transparent',
+    border: '1px dashed rgba(248, 113, 113, 0.3)',
+    color: '#f87171',
+    fontFamily: 'var(--font-mono)',
+    fontSize: '11px',
+    padding: '8px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    marginTop: '6px',
+    transition: 'all 0.18s ease',
+  },
+  rightCol: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
+  },
+  filterControlBar: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+  },
+  searchContainer: {
+    position: 'relative',
     display: 'flex',
     alignItems: 'center',
   },
   searchIcon: {
     position: 'absolute',
-    left: '12px',
-    fontSize: '14px',
+    left: '14px',
+    fontSize: '13px',
     color: '#64748b',
     pointerEvents: 'none',
   },
   searchInput: {
     width: '100%',
+    height: '42px',
     paddingLeft: '38px',
-    background: 'rgba(15, 23, 42, 0.8)',
-    border: '1px solid #1e293b',
+    paddingRight: '14px',
+    background: '#0d1424',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: '10px',
     color: '#ffffff',
     fontSize: '13.5px',
-    minHeight: '42px',
+    outline: 'none',
   },
-  filterGroup: {
+  filterChipsRow: {
     display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
     flexWrap: 'wrap',
-  },
-  filterChip: {
-    background: 'rgba(255, 255, 255, 0.05)',
-    color: '#94a3b8',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '8px',
-    padding: '6px 12px',
-    fontSize: '12.5px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    minHeight: '36px',
-    transition: 'all 0.16s',
-  },
-  filterChipActive: {
-    background: 'rgba(56, 189, 248, 0.14)',
-    color: '#38bdf8',
-    borderColor: 'rgba(56, 189, 248, 0.4)',
-  },
-  auxActions: {
-    display: 'flex',
-    alignItems: 'center',
     gap: '8px',
   },
-  refreshBtn: {
-    background: 'rgba(255, 255, 255, 0.06)',
-    color: '#cbd5e1',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
-    padding: '6px 12px',
-    borderRadius: '8px',
-    fontSize: '12.5px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    minHeight: '36px',
-  },
-  clearBtn: {
-    background: 'rgba(239, 68, 68, 0.12)',
-    color: '#f87171',
-    border: '1px solid rgba(239, 68, 68, 0.25)',
-    padding: '6px 12px',
-    borderRadius: '8px',
-    fontSize: '12.5px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    minHeight: '36px',
-  },
-  loadingState: {
+  lectureList: {
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '64px 16px',
-    gap: '12px',
+    gap: '16px',
   },
-  spinner: {
-    width: '32px',
-    height: '32px',
-    border: '3px solid rgba(56, 189, 248, 0.2)',
-    borderTopColor: '#38bdf8',
-    borderRadius: '50%',
-    animation: 'spin 0.7s linear infinite',
-  },
-  emptyState: {
-    textAlign: 'center',
-    padding: '56px 20px',
-    borderRadius: '16px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    maxWidth: '560px',
-    margin: '32px auto',
-  },
-  emptyTitle: {
-    fontSize: '18px',
-    fontWeight: '700',
-    color: '#ffffff',
-    marginBottom: '6px',
-  },
-  emptyDesc: {
-    fontSize: '14px',
-    color: '#94a3b8',
-    lineHeight: 1.55,
-    margin: 0,
-    maxWidth: '440px',
-  },
-  lectureGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-    gap: '20px',
-  },
-  lectureCard: {
-    padding: '20px',
-    borderRadius: '16px',
+  lectureItem: {
+    cursor: 'pointer',
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',
-    cursor: 'pointer',
-    transition: 'transform 0.18s, border-color 0.18s, box-shadow 0.18s',
   },
-  cardHeader: {
+  itemHeader: {
     display: 'flex',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '10px',
+    alignItems: 'center',
   },
-  deleteCardBtn: {
+  codePillBtn: {
+    fontFamily: 'var(--font-mono)',
+    fontSize: '0.72rem',
+    fontWeight: '700',
+    color: '#38bdf8',
+    background: 'rgba(56, 189, 248, 0.08)',
+    border: '1px solid rgba(56, 189, 248, 0.2)',
+    borderRadius: '6px',
+    padding: '2px 8px',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+  },
+  deleteBtn: {
     background: 'transparent',
     border: 'none',
     color: '#64748b',
-    width: '28px',
-    height: '28px',
-    padding: 0,
-    borderRadius: '6px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
     fontSize: '14px',
-    boxShadow: 'none',
+    cursor: 'pointer',
+    padding: '4px 8px',
+    borderRadius: '4px',
   },
-  cardTitle: {
-    fontSize: '17px',
-    fontWeight: '700',
+  itemContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  itemTitle: {
+    fontFamily: 'var(--font-heading)',
+    fontSize: '1.25rem',
+    fontWeight: '800',
     color: '#ffffff',
-    lineHeight: 1.3,
-    margin: '2px 0 0',
-  },
-  cardDesc: {
-    fontSize: '13px',
-    color: '#94a3b8',
-    lineHeight: 1.5,
     margin: 0,
-    flex: 1,
-    display: '-webkit-box',
-    WebkitLineClamp: 2,
-    WebkitBoxOrient: 'vertical',
-    overflow: 'hidden',
+  },
+  itemDesc: {
+    fontSize: '0.88rem',
+    color: '#94a3b8',
+    lineHeight: 1.55,
+    margin: 0,
   },
   metaRow: {
     display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    fontSize: '12px',
-    color: '#64748b',
-    paddingTop: '6px',
-    borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-  },
-  metaItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px',
-  },
-  codeRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    background: 'rgba(15, 23, 42, 0.7)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '8px',
-    padding: '6px 10px',
-  },
-  codeText: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  },
-  codePrefix: {
-    fontSize: '11px',
-    color: '#64748b',
-    fontWeight: '700',
-  },
-  codeValue: {
-    fontFamily: 'var(--font-mono)',
-    fontSize: '13px',
-    color: '#38bdf8',
-    fontWeight: '700',
-    letterSpacing: '0.04em',
-  },
-  copyBtn: {
-    background: 'rgba(255, 255, 255, 0.06)',
-    color: '#cbd5e1',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderRadius: '6px',
-    padding: '4px 10px',
-    fontSize: '11.5px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    minHeight: '28px',
-    boxShadow: 'none',
-  },
-  actionRow: {
-    display: 'flex',
-    gap: '8px',
+    gap: '16px',
+    flexWrap: 'wrap',
     marginTop: '4px',
   },
-  scheduledNotice: {
-    fontSize: '12px',
-    color: '#94a3b8',
-    fontWeight: '600',
+  metaItem: {
+    fontFamily: 'var(--font-mono)',
+    fontSize: '0.75rem',
+    color: '#64748b',
+  },
+  itemActions: {
     display: 'flex',
+    gap: '10px',
+    marginTop: '6px',
+    paddingTop: '12px',
+    borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+  },
+  loadingBox: {
+    padding: '40px',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
+    gap: '12px',
+  },
+  spinner: {
+    width: '28px',
+    height: '28px',
+    border: '2px solid rgba(56, 189, 248, 0.2)',
+    borderTopColor: '#38bdf8',
+    borderRadius: '50%',
+    animation: 'spin 0.8s linear infinite',
+  },
+  emptyCard: {
+    padding: '36px',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '10px',
   },
   modalOverlay: {
     position: 'fixed',
@@ -1081,108 +864,36 @@ const styles = {
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'rgba(4, 7, 13, 0.82)',
+    background: 'rgba(0, 0, 0, 0.75)',
     backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '16px',
     zIndex: 1000,
+    padding: '16px',
   },
   modalCard: {
     width: '100%',
     maxWidth: '520px',
-    background: '#0f172a',
+    padding: '24px',
+  },
+  fieldLabel: {
+    display: 'block',
+    fontSize: '12.5px',
+    fontWeight: '700',
+    color: '#94a3b8',
+    marginBottom: '6px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+  },
+  modalInput: {
+    width: '100%',
+    padding: '10px 12px',
+    background: '#080c14',
     border: '1px solid rgba(255, 255, 255, 0.12)',
-    borderRadius: '18px',
-    padding: '28px',
-    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
-  },
-  modalHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '20px',
-  },
-  modalTitle: {
-    fontSize: '20px',
-    fontWeight: '800',
+    borderRadius: '8px',
     color: '#ffffff',
-    letterSpacing: '-0.02em',
-    margin: 0,
-  },
-  modalCloseBtn: {
-    background: 'transparent',
-    border: 'none',
-    color: '#94a3b8',
-    fontSize: '18px',
-    width: '36px',
-    height: '36px',
-    cursor: 'pointer',
-    borderRadius: '6px',
-    boxShadow: 'none',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalForm: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-  },
-  modalField: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px',
-  },
-  label: {
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#e2e8f0',
-  },
-  requiredStar: {
-    color: '#f87171',
-  },
-  input: {
-    background: 'rgba(8, 12, 20, 0.85)',
-    border: '1px solid #1e293b',
-    borderRadius: '10px',
-    padding: '11px 14px',
-    color: '#ffffff',
-    fontSize: '14px',
-    minHeight: '44px',
-  },
-  textarea: {
-    background: 'rgba(8, 12, 20, 0.85)',
-    border: '1px solid #1e293b',
-    borderRadius: '10px',
-    padding: '11px 14px',
-    color: '#ffffff',
-    fontSize: '14px',
-    resize: 'vertical',
-    fontFamily: 'var(--font-body)',
-  },
-  select: {
-    background: 'rgba(8, 12, 20, 0.85)',
-    border: '1px solid #1e293b',
-    borderRadius: '10px',
-    padding: '11px 14px',
-    color: '#ffffff',
-    fontSize: '14px',
-    minHeight: '44px',
-    cursor: 'pointer',
-  },
-  modalActions: {
-    display: 'flex',
-    gap: '12px',
-    marginTop: '8px',
-  },
-  deleteWarningText: {
     fontSize: '13.5px',
-    color: '#94a3b8',
-    textAlign: 'center',
-    lineHeight: 1.5,
-    margin: '0 0 20px',
+    outline: 'none',
   },
 };

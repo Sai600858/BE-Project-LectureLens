@@ -58,7 +58,8 @@ function isAuthError(err) {
     msg.includes('api key not valid') ||
     msg.includes('unauthorized') ||
     msg.includes('permission_denied') ||
-    msg.includes('invalid api key')
+    msg.includes('invalid api key') ||
+    msg.includes('access_token_type_unsupported')
   );
 }
 

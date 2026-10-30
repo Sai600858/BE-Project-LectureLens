@@ -15,13 +15,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+import { refreshSocketAuth } from '../socket';
+
 // Auto-handle expired or invalid tokens
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      const errMsg = String(error.response.data?.error || '');
-      if (errMsg.toLowerCase().includes('token') || errMsg.toLowerCase().includes('access')) {
+    if (error.response && error.response.status === 401) {
+      const errMsg = String(error.response.data?.error || error.response.data?.message || '');
+      if (
+        errMsg.toLowerCase().includes('token') ||
+        errMsg.toLowerCase().includes('expired') ||
+        errMsg.toLowerCase().includes('unauthorized')
+      ) {
         localStorage.removeItem('lecturelens_token');
         localStorage.removeItem('lecturelens_user');
       }
@@ -36,6 +42,7 @@ export const authApi = {
     if (res.data.token) {
       localStorage.setItem('lecturelens_token', res.data.token);
       localStorage.setItem('lecturelens_user', JSON.stringify(res.data.user));
+      try { refreshSocketAuth(); } catch (_) {}
     }
     return res.data;
   },
@@ -44,6 +51,7 @@ export const authApi = {
     if (res.data.token) {
       localStorage.setItem('lecturelens_token', res.data.token);
       localStorage.setItem('lecturelens_user', JSON.stringify(res.data.user));
+      try { refreshSocketAuth(); } catch (_) {}
     }
     return res.data;
   },
@@ -54,6 +62,7 @@ export const authApi = {
   logout: () => {
     localStorage.removeItem('lecturelens_token');
     localStorage.removeItem('lecturelens_user');
+    try { refreshSocketAuth(); } catch (_) {}
   },
   getCurrentUser: () => {
     const str = localStorage.getItem('lecturelens_user');
@@ -139,6 +148,10 @@ export const aiApi = {
   generateStudyNotes: async (lectureId, mode = 'detailed') => {
     const res = await api.post(`/api/lectures/${lectureId}/notes`, { mode });
     return res.data.notes;
+  },
+  getLectureVisualizations: async (lectureId) => {
+    const res = await api.get(`/api/lectures/${lectureId}/visualizations`);
+    return res.data;
   },
   getTranscript: async (lectureId) => {
     const res = await api.get(`/api/lectures/${lectureId}/transcript`);

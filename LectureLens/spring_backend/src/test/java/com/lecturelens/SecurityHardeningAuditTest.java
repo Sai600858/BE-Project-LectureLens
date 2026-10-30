@@ -226,7 +226,7 @@ public class SecurityHardeningAuditTest {
 
     @Test
     @Order(3)
-    @DisplayName("3. Privilege escalation rejected during registration (TEACHER/ADMIN cannot be self-assigned)")
+    @DisplayName("3. Privilege escalation rejected during registration (ADMIN cannot be self-assigned; TEACHER permitted)")
     void test03_privilegeEscalationRejectedDuringRegistration() throws Exception {
         RegisterRequest adminReq = new RegisterRequest("Hacker", "hack_admin@sec.edu", "pass12345", "ADMIN");
         mockMvc.perform(post("/api/auth/register")
@@ -235,12 +235,12 @@ public class SecurityHardeningAuditTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error", containsString("Privilege escalation prevented")));
 
-        RegisterRequest teacherReq = new RegisterRequest("Impostor", "hack_teacher@sec.edu", "pass12345", "TEACHER");
+        RegisterRequest teacherReq = new RegisterRequest("Valid Teacher", "valid_teacher@sec.edu", "pass12345", "TEACHER");
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(teacherReq)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error", containsString("Privilege escalation prevented")));
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.user.role", is("TEACHER")));
     }
 
     @Test

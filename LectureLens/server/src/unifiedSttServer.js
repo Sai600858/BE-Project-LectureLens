@@ -2,46 +2,23 @@
  * unifiedSttServer.js
  * 
  * Unified Speech-to-Text (STT) Socket.IO Server for LectureLens.
- * Simplifies and unifies multiple disparate STT scripts (mock, Gemini, OpenAI)
- * into a single configurable runtime with automatic provider selection and fallback.
- * 
- * Supported Providers:
- * - 'gemini': Google Gemini Multimodal Audio transcription (default if GEMINI_API_KEY is present)
- * - 'openai': OpenAI Whisper API transcription (default if OPENAI_API_KEY is present and no Gemini)
- * - 'mock': Local offline educational transcript simulator
- * - 'auto': Auto-detects based on environment keys, falling back gracefully to mock
- * 
- * Configuration via environment variables:
- * - STT_PROVIDER: 'auto' | 'gemini' | 'openai' | 'mock'
- * - LLM_PORT: Port to listen on (default: 5000)
- * - GEMINI_API_KEY / OPENAI_API_KEY
- * - CORS_ORIGIN: Allowed origins whitelist
+ * Supports:
+ * - OpenAI Whisper API transcription (in-memory, low latency, robust)
+ * - Google Gemini Multimodal Audio transcription (with key rotation)
+ * - Local offline educational transcript simulator
+ * - Automatic fallback between providers to ensure 100% transcript uptime
  */
 
 require('dotenv').config();
 const { Server } = require('socket.io');
-const fs = require('fs');
-const path = require('path');
+const { toFile } = require('openai');
 
 const PORT = parseInt(process.env.LLM_PORT, 10) || 5000;
 
 // Allowed CORS origins
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
-  : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000'];
-
-const io = new Server(PORT, {
-  cors: {
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
-        return callback(null, true);
-      }
-      return callback(new Error('Blocked by CORS policy on STT Server'));
-    },
-    methods: ['GET', 'POST'],
-    credentials: true,
-  },
-});
+  : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'http://localhost:3001'];
 
 // Provider selection
 let configuredProvider = (process.env.STT_PROVIDER || 'auto').toLowerCase().trim();
@@ -66,152 +43,213 @@ if (rawOpenAiKey && !rawOpenAiKey.includes('your_openai_api_key')) {
 function resolveActiveProvider() {
   if (configuredProvider === 'gemini') {
     if (geminiManager.getActiveKeyCount() > 0) return 'gemini';
-    console.warn('[Unified STT] Provider requested is gemini, but no GEMINI_API_KEY found. Falling back to mock.');
+    if (openaiClient) return 'openai';
     return 'mock';
   }
   if (configuredProvider === 'openai') {
     if (openaiClient) return 'openai';
-    console.warn('[Unified STT] Provider requested is openai, but no OPENAI_API_KEY found. Falling back to mock.');
+    if (geminiManager.getActiveKeyCount() > 0) return 'gemini';
     return 'mock';
   }
   if (configuredProvider === 'mock') {
     return 'mock';
   }
-  // Auto-detect
-  if (geminiManager.getActiveKeyCount() > 0) return 'gemini';
+  // Auto: Prefer OpenAI Whisper if valid key present, else Gemini, else Mock
   if (openaiClient) return 'openai';
+  if (geminiManager.getActiveKeyCount() > 0) return 'gemini';
   return 'mock';
 }
 
 const activeProvider = resolveActiveProvider();
-console.log(`[Unified STT Server] Initialized on port ${PORT} using provider: [${activeProvider.toUpperCase()}]`);
+console.log(`[Unified STT] Initialized with primary provider: [${activeProvider.toUpperCase()}]`);
 
-// ── Mock Phrases ────────────────────────────────────────────────────────────
+// ── Mock Educational Phrases ────────────────────────────────────────────────
 const SAMPLE_PHRASES = [
   "Welcome everyone to today's lecture on distributed systems.",
   "Today we will cover WebRTC media streaming and Selective Forwarding Units.",
   "As you can see on the screen, low-latency audio packet processing is critical.",
   "Let me pause here and ask if anyone has questions about the architecture.",
   "In the next section, we will analyze data serialization and socket events.",
-  "Notice how audio chunks are captured every 3 seconds and sent over WebSockets.",
+  "Notice how audio chunks are captured every 4 seconds and sent over WebSockets.",
   "This enables seamless real-time captions directly in your browser.",
   "Let's review the main takeaways before concluding today's session."
 ];
+
 const sessionCounters = new Map();
 
-// Temp directory for file-based providers (OpenAI Whisper)
-const tempDir = path.join(__dirname, '..', 'temp_audio');
-if (!fs.existsSync(tempDir)) {
-  fs.mkdirSync(tempDir, { recursive: true });
+/**
+ * Transcribe an audio buffer using the best available provider with automatic fallback
+ */
+async function transcribeAudio(buffer, language = 'en', sessionId = 'default', chunkId = 1, startOffset = 0) {
+  const count = sessionCounters.get(sessionId) || 0;
+  sessionCounters.set(sessionId, count + 1);
+  const endOffset = parseFloat((startOffset + 4.0).toFixed(2));
+
+  // 1. Try Primary: OPENAI WHISPER
+  if (activeProvider === 'openai' && openaiClient) {
+    try {
+      const audioFile = await toFile(buffer, 'audio.webm', { type: 'audio/webm' });
+      const transcription = await openaiClient.audio.transcriptions.create({
+        file: audioFile,
+        model: 'whisper-1',
+        language: language && language !== 'auto' && language.length === 2 ? language : undefined,
+      });
+
+      const text = (transcription.text || '').trim();
+      if (text) {
+        return { text, startOffset, endOffset };
+      }
+      // If Whisper processed audio and detected silence / no speech, return null
+      return null;
+    } catch (err) {
+      console.warn(`[Unified STT] OpenAI Whisper chunk #${count + 1} notice: ${err.message}. Attempting fallback...`);
+    }
+  }
+
+  // 2. Try GEMINI (if active or as fallback)
+  if (geminiManager.getActiveKeyCount() > 0) {
+    try {
+      const audioPart = {
+        inlineData: {
+          data: buffer.toString('base64'),
+          mimeType: 'audio/webm',
+        },
+      };
+
+      const result = await geminiManager.executeWithRotation(async (client) => {
+        const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        return await model.generateContent([
+          `You are an accurate real-time speech transcriber. Transcribe this audio clip exactly as spoken in ${language}. Return ONLY the transcribed words with zero commentary. If the audio is silence, return [SILENCE].`,
+          audioPart,
+        ]);
+      });
+
+      const text = result.response.text().trim();
+      if (text && text !== '[SILENCE]') {
+        return { text, startOffset, endOffset };
+      }
+      // If Gemini reported silence, return null
+      return null;
+    } catch (err) {
+      console.warn(`[Unified STT] Gemini chunk #${count + 1} notice: ${err.message}`);
+    }
+  }
+
+  // 3. Fallback: Secondary attempt with OpenAI if not already primary
+  if (activeProvider !== 'openai' && openaiClient) {
+    try {
+      const audioFile = await toFile(buffer, 'audio.webm', { type: 'audio/webm' });
+      const transcription = await openaiClient.audio.transcriptions.create({
+        file: audioFile,
+        model: 'whisper-1',
+        language: language && language !== 'auto' && language.length === 2 ? language : undefined,
+      });
+
+      const text = (transcription.text || '').trim();
+      if (text) {
+        return { text, startOffset, endOffset };
+      }
+      return null;
+    } catch (err) {
+      console.warn(`[Unified STT] Secondary OpenAI fallback notice: ${err.message}`);
+    }
+  }
+
+  // 4. Fallback: Local Educational Transcript Simulator (ONLY in explicit mock mode or when provider is mock)
+  if (activeProvider === 'mock' || configuredProvider === 'mock') {
+    const phraseIndex = count % SAMPLE_PHRASES.length;
+    const text = SAMPLE_PHRASES[phraseIndex];
+    return { text, startOffset, endOffset };
+  }
+
+  // Otherwise, user is silent -> return null
+  return null;
 }
 
-// ── Socket.IO Event Handlers ────────────────────────────────────────────────
-io.on('connection', (socket) => {
-  console.log(`[Unified STT] Client connected: ${socket.id}`);
-
+/**
+ * Register STT event listeners on a single socket
+ */
+function registerSttHandlers(socket) {
   socket.on('startSession', ({ sessionId }) => {
-    sessionCounters.set(sessionId, 0);
+    if (sessionId) sessionCounters.set(sessionId, 0);
     console.log(`[Unified STT] Session started for room: ${sessionId} (provider: ${activeProvider})`);
   });
 
   socket.on('audioChunk', async ({ sessionId, chunk, startOffset = 0, chunkId, language = 'en' }) => {
-    const count = sessionCounters.get(sessionId) || 0;
-    sessionCounters.set(sessionId, count + 1);
-
-    if (!chunk || chunk.length < 1000) {
-      return; // Ignore tiny packets / silence
+    if (!chunk || chunk.length < 500) {
+      return; // Ignore empty / silence packets
     }
 
-    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-    const endOffset = parseFloat((startOffset + 3.0).toFixed(2));
-
-    // 1. GEMINI PROVIDER
-    if (activeProvider === 'gemini') {
-      try {
-        const audioPart = {
-          inlineData: {
-            data: buffer.toString('base64'),
-            mimeType: 'audio/webm',
-          },
-        };
-
-        const result = await geminiManager.executeWithRotation(async (client, keyIndex) => {
-          const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
-          return await model.generateContent([
-            `You are an accurate real-time speech transcriber. Transcribe this audio clip exactly as spoken in ${language}. Return ONLY the transcribed words with zero commentary or punctuation explanations. If the audio is silence or unintelligible noise, return [SILENCE].`,
-            audioPart,
-          ]);
+    try {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      const res = await transcribeAudio(buffer, language, sessionId, chunkId, startOffset);
+      if (res && res.text) {
+        socket.emit('transcriptSegment', {
+          sessionId,
+          chunkId,
+          text: res.text,
+          startOffset: res.startOffset,
+          endOffset: res.endOffset,
         });
-
-        const text = result.response.text().trim();
-        if (text && text !== '[SILENCE]') {
-          socket.emit('transcriptSegment', {
-            sessionId,
-            chunkId,
-            text,
-            startOffset,
-            endOffset,
-          });
-        }
-        return;
-      } catch (err) {
-        console.warn(`[Unified STT] Gemini error for chunk #${count + 1}: ${err.message}. Falling back to sample phrase.`);
       }
+    } catch (e) {
+      console.warn('[Unified STT] Error processing audioChunk:', e.message);
     }
-
-    // 2. OPENAI PROVIDER
-    if (activeProvider === 'openai') {
-      const tempFile = path.join(tempDir, `chunk_${sessionId}_${Date.now()}_${Math.random().toString(36).substring(7)}.webm`);
-      try {
-        fs.writeFileSync(tempFile, buffer);
-        const transcription = await openaiClient.audio.transcriptions.create({
-          file: fs.createReadStream(tempFile),
-          model: 'whisper-1',
-          language,
-        });
-
-        const text = (transcription.text || '').trim();
-        if (text) {
-          socket.emit('transcriptSegment', {
-            sessionId,
-            chunkId,
-            text,
-            startOffset,
-            endOffset,
-          });
-        }
-        return;
-      } catch (err) {
-        console.warn(`[Unified STT] OpenAI error for chunk #${count + 1}: ${err.message}. Falling back to sample phrase.`);
-      } finally {
-        if (fs.existsSync(tempFile)) {
-          fs.unlink(tempFile, () => {});
-        }
-      }
-    }
-
-    // 3. MOCK / FALLBACK PROVIDER
-    const phraseIndex = count % SAMPLE_PHRASES.length;
-    const text = SAMPLE_PHRASES[phraseIndex];
-    setTimeout(() => {
-      socket.emit('transcriptSegment', {
-        sessionId,
-        chunkId,
-        text,
-        startOffset,
-        endOffset,
-      });
-    }, 300);
   });
 
   socket.on('endSession', ({ sessionId }) => {
-    sessionCounters.delete(sessionId);
+    if (sessionId) sessionCounters.delete(sessionId);
     console.log(`[Unified STT] Session ended for room: ${sessionId}`);
   });
+}
 
-  socket.on('disconnect', () => {
-    console.log(`[Unified STT] Client disconnected: ${socket.id}`);
+/**
+ * Attach STT event listeners to an existing Socket.IO Server instance (e.g., port 3001)
+ */
+function attachSttSocketHandlers(ioInstance) {
+  if (!ioInstance) return;
+  ioInstance.on('connection', (socket) => {
+    registerSttHandlers(socket);
   });
-});
+  console.log('[Unified STT] Embedded STT handlers attached to main Socket.IO server.');
+}
 
-module.exports = { io, resolveActiveProvider };
+// ── Standalone Server on PORT (5000) ─────────────────────────────────────────
+let standaloneIo = null;
+function startSttServer(port = PORT) {
+  if (standaloneIo) return standaloneIo;
+  try {
+    standaloneIo = new Server(port, {
+      cors: {
+        origin: (origin, callback) => callback(null, true),
+        methods: ['GET', 'POST'],
+        credentials: true,
+      },
+    });
+
+    standaloneIo.on('connection', (socket) => {
+      console.log(`[Unified STT Standalone] Client connected: ${socket.id}`);
+      registerSttHandlers(socket);
+    });
+
+    console.log(`[Unified STT Standalone Server] Listening on http://localhost:${port}`);
+    return standaloneIo;
+  } catch (err) {
+    console.warn(`[Unified STT Standalone] Notice: Could not bind to port ${port}: ${err.message}`);
+    return null;
+  }
+}
+
+// Auto-start standalone if run directly
+if (require.main === module) {
+  startSttServer();
+}
+
+module.exports = {
+  io: standaloneIo,
+  startSttServer,
+  attachSttSocketHandlers,
+  registerSttHandlers,
+  transcribeAudio,
+  resolveActiveProvider,
+};

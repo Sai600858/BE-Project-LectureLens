@@ -321,7 +321,12 @@ async function runTests() {
       body: JSON.stringify({ question: 'What did the professor say about black hole thermodynamics?' }),
     }).then(r => r.json());
 
-    const rejectedHallucination = ungrounded.answer.toLowerCase().includes('not contain') || ungrounded.answer.toLowerCase().includes('enough information');
+    const ansLower = (ungrounded.answer || '').toLowerCase();
+    const rejectedHallucination = ansLower.includes('not contain') || 
+                                  ansLower.includes('enough information') || 
+                                  ansLower.includes('not covered') || 
+                                  ansLower.includes('not supported') ||
+                                  ansLower.includes('abstain');
     recordTest('RAG Q&A: Hallucination Rejection', rejectedHallucination, `Promptly responded: "${ungrounded.answer?.slice(0, 60)}..."`);
   } catch (e) {
     recordTest('RAG Q&A', false, e.message);

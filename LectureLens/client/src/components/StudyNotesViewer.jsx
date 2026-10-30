@@ -135,7 +135,7 @@ function DiagramModal({ title, svg, image, caption, onClose }) {
 }
 
 /* ── Single Inline Visualization Card ────────────────────────────────────── */
-function InlineVisualizationCard({ viz, onEnlarge }) {
+function InlineVisualizationCard({ viz, onEnlarge, onLaunchVisualizer, topicId }) {
   if (!viz) return null;
   const { title, type, caption, connectionToFormula, svg } = viz;
   const imageUrl = resolveVizImage(viz);
@@ -159,15 +159,26 @@ function InlineVisualizationCard({ viz, onEnlarge }) {
           <span style={styles.vizTypeBadge}>{typeLabels[type] || `📐 ${type}`}</span>
           <h4 style={styles.vizTitle}>{title}</h4>
         </div>
-        {(svg || imageUrl) && (
-          <button
-            onClick={() => onEnlarge && onEnlarge({ ...viz, imageUrl })}
-            style={styles.enlargeBtn}
-            title="Enlarge visual"
-          >
-            🔍 Enlarge
-          </button>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {onLaunchVisualizer && (
+            <button
+              onClick={() => onLaunchVisualizer(topicId || viz.id)}
+              style={styles.launchBtn}
+              title="Launch interactive simulation workspace for this concept"
+            >
+              🚀 Explore in Visualizer
+            </button>
+          )}
+          {(svg || imageUrl) && (
+            <button
+              onClick={() => onEnlarge && onEnlarge({ ...viz, imageUrl })}
+              style={styles.enlargeBtn}
+              title="Enlarge visual"
+            >
+              🔍 Enlarge
+            </button>
+          )}
+        </div>
       </div>
 
       {svg ? (
@@ -205,7 +216,7 @@ function InlineVisualizationCard({ viz, onEnlarge }) {
 }
 
 /* ── Main StudyNotesViewer ───────────────────────────────────────────────── */
-export default function StudyNotesViewer({ studyNotes, isLoading }) {
+export default function StudyNotesViewer({ studyNotes, isLoading, onLaunchVisualizer }) {
   const [zoomViz, setZoomViz] = useState(null);
 
   if (isLoading) {
@@ -317,6 +328,8 @@ export default function StudyNotesViewer({ studyNotes, isLoading }) {
                 {viz && (
                   <InlineVisualizationCard
                     viz={viz}
+                    topicId={`topic_sec_${idx + 1}`}
+                    onLaunchVisualizer={onLaunchVisualizer}
                     onEnlarge={(v) => setZoomViz(v)}
                   />
                 )}
@@ -574,6 +587,21 @@ const styles = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
+  },
+  launchBtn: {
+    background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
+    border: 'none',
+    color: '#ffffff',
+    fontSize: '12px',
+    fontWeight: '700',
+    padding: '8px 14px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    minHeight: '44px',
+    boxShadow: '0 2px 10px rgba(37, 99, 235, 0.35)',
   },
   svgContainer: {
     overflowX: 'auto',

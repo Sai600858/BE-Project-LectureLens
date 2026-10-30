@@ -37,6 +37,9 @@ describe('Security Audit & Hardening Test Suite', () => {
   let student2Token;
 
   before(async () => {
+    // Isolate from any background Spring Boot server so SQLite seeded fixtures are tested directly
+    process.env.SPRING_BOOT_URL = 'http://127.0.0.1:59999';
+
     // Generate valid tokens with specific roles & IDs
     adminToken = generateToken({ id: 'usr_admin_test', name: 'Admin User', email: 'admin@lecturelens.test', role: 'ADMIN' });
     teacherToken = generateToken({ id: 'usr_teacher_test', name: 'Teacher User', email: 'teacher@lecturelens.test', role: 'TEACHER' });
@@ -154,7 +157,7 @@ describe('Security Audit & Hardening Test Suite', () => {
   // 3. Authentication & Privilege Escalation
   // =========================================================================
   describe('Phase 2: Authentication & Privilege Escalation', () => {
-    test('rejects unauthenticated user registering as ADMIN or TEACHER', async () => {
+    test('rejects unauthenticated user registering as ADMIN', async () => {
       await assert.rejects(
         async () => {
           await registerUser({
@@ -166,18 +169,18 @@ describe('Security Audit & Hardening Test Suite', () => {
         },
         /Privilege escalation prevented/
       );
+    });
 
-      await assert.rejects(
-        async () => {
-          await registerUser({
-            name: 'Malicious Teacher',
-            email: `attacker_t_${Date.now()}@test.com`,
-            password: 'StrongPassword123!',
-            role: 'TEACHER',
-          }, null);
-        },
-        /Privilege escalation prevented/
-      );
+    test('allows legitimate new instructor to register as TEACHER', async () => {
+      const regRes = await registerUser({
+        name: 'New Professor',
+        email: `prof_${Date.now()}@lecturelens.test`,
+        password: 'StrongPassword123!',
+        role: 'TEACHER',
+      }, null);
+
+      assert.strictEqual(regRes.user.role, 'TEACHER');
+      assert.ok(regRes.token, 'Should issue valid JWT token for registered teacher');
     });
 
     test('enforces password minimum length of 8 characters', async () => {

@@ -72,11 +72,13 @@ public class AuthServiceImpl implements AuthService {
             String roleUpper = requestedRoleStr.trim().toUpperCase();
             try {
                 Role parsedRole = Role.valueOf(roleUpper);
-                if (parsedRole == Role.ADMIN || parsedRole == Role.TEACHER) {
+                if (parsedRole == Role.ADMIN) {
                     if (currentUserRole == null || !currentUserRole.equalsIgnoreCase("ADMIN")) {
                         throw new IllegalArgumentException("Privilege escalation prevented: only administrators can create " + roleUpper + " accounts");
                     }
                     finalRole = parsedRole;
+                } else if (parsedRole == Role.TEACHER) {
+                    finalRole = Role.TEACHER;
                 } else {
                     finalRole = Role.STUDENT;
                 }

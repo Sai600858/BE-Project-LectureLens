@@ -3,10 +3,10 @@ import { io as llmIo } from 'socket.io-client';
 import socket from '../socket';
 import { aiApi } from '../services/api';
 
-const SYNC_INTERVAL_MS = 3000;
+const SYNC_INTERVAL_MS = 5000;
 const CHUNK_INTERVAL_MS = 5000;
 const LLM_SERVER_URL = import.meta.env.VITE_LLM_SERVER_URL || 'http://localhost:5000';
-const DEFAULT_AUTO_SNAP_INTERVAL_SEC = 30; // seconds between automatic snapshots
+const DEFAULT_AUTO_SNAP_INTERVAL_SEC = 35; // seconds between automatic snapshots
 
 export function useTranscript({ roomId, role, localStream, micEnabled = true, lectureId }) {
   const [segments, setSegments] = useState([]);
@@ -44,12 +44,21 @@ export function useTranscript({ roomId, role, localStream, micEnabled = true, le
   const isAutoSnappingRef = useRef(false);      // guard: skip cycle if a snap is in flight
   const autoSnapSourceRef = useRef(null);       // latest active screen / camera source
   const autoSnapEnabledRef = useRef(false);     // mirror of autoSnapEnabled for use in timer closure
+  const speechRecognitionRef = useRef(null);    // Web Speech API instance for real-time live captions
+  const lastSyncedHashRef = useRef('');         // Prevent redundant socket broadcast & DB sync spam
+  const persistentAudioStreamRef = useRef(null);// Persistent audio track to avoid GC thrashing
 
   const buildFullText = (segs) =>
     segs.map((s) => s.text).filter(Boolean).join(' ');
 
   const syncToSFU = useCallback(
     (segs) => {
+      if (!segs || segs.length === 0) return;
+      const lastSeg = segs[segs.length - 1];
+      const currentHash = `${segs.length}_${lastSeg?.id}_${lastSeg?.text || ''}_${lastSeg?.status || ''}`;
+      if (currentHash === lastSyncedHashRef.current) return; // Skip redundant sync
+      lastSyncedHashRef.current = currentHash;
+
       socket.emit('syncTranscript', {
         roomId,
         segments: segs,
@@ -250,15 +259,69 @@ export function useTranscript({ roomId, role, localStream, micEnabled = true, le
     const user = userStr ? JSON.parse(userStr) : null;
     const speakerName = user?.name || 'Prof. Turing (Teacher)';
 
+    // Unified Segment Handler for both Embedded (port 3001) and Standalone (port 5000) STT
+    const handleSegment = ({ chunkId, text, startOffset, endOffset }) => {
+      if (!text || !text.trim()) return;
+      const cleanText = text.trim();
+      const existingIdx = segmentsRef.current.findIndex((s) =>
+        chunkId != null ? s.id === chunkId : (s.status === 'pending' && Math.abs(s.startOffset - (startOffset || 0)) < 4.0)
+      );
+
+      let segItem;
+      if (existingIdx !== -1) {
+        segmentsRef.current[existingIdx] = {
+          ...segmentsRef.current[existingIdx],
+          text: cleanText,
+          endOffset: endOffset || segmentsRef.current[existingIdx].startOffset + 4.0,
+          status: 'complete',
+          speakerName: segmentsRef.current[existingIdx].speakerName || speakerName,
+        };
+        segItem = segmentsRef.current[existingIdx];
+      } else {
+        segItem = {
+          id: chunkId || ++segmentIdRef.current,
+          text: cleanText,
+          speakerName,
+          startOffset: startOffset || 0,
+          endOffset: endOffset || (startOffset || 0) + 4.0,
+          status: 'complete',
+          timestamp: Date.now(),
+        };
+        segmentsRef.current.push(segItem);
+      }
+      setSegments([...segmentsRef.current]);
+      syncToSFU(segmentsRef.current);
+
+      // If current language is not English, translate this incoming segment immediately
+      const currentLang = selectedLanguageRef.current;
+      if (currentLang && currentLang !== 'en' && segItem?.id) {
+        socket.emit('translateText', { text: cleanText, targetLang: currentLang }, (res) => {
+          if (res?.translatedText) {
+            setTranslatedSegments((prev) => {
+              const next = { ...prev, [`${segItem.id}_${currentLang}`]: res.translatedText };
+              translatedSegmentsRef.current = next;
+              return next;
+            });
+          }
+        });
+      }
+    };
+
+    // 1. Attach STT listener to main Socket (port 3001 - always connected!)
+    socket.off('transcriptSegment', handleSegment);
+    socket.on('transcriptSegment', handleSegment);
+    socket.emit('startSession', { sessionId: roomId });
+
+    // 2. Attach STT listener to standalone socket (port 5000) if available
     try {
       if (!llmSocketRef.current || !llmSocketRef.current.connected) {
         llmSocketRef.current = llmIo(LLM_SERVER_URL, {
-          reconnectionAttempts: 5,
-          timeout: 5000,
+          reconnectionAttempts: 2,
+          timeout: 3000,
         });
 
         llmSocketRef.current.on('connect', () => {
-          console.log('[LLM Client] Connected to STT service at', LLM_SERVER_URL);
+          console.log('[LLM Client] Connected to standalone STT service at', LLM_SERVER_URL);
           llmSocketRef.current.emit('startSession', { sessionId: roomId });
           while (audioQueueRef.current.length > 0) {
             const item = audioQueueRef.current.shift();
@@ -266,58 +329,56 @@ export function useTranscript({ roomId, role, localStream, micEnabled = true, le
           }
         });
 
-        llmSocketRef.current.on('transcriptSegment', ({ chunkId, text, startOffset, endOffset }) => {
-          if (!text || !text.trim()) return;
-          console.log('[Transcript] Received segment:', chunkId, text);
-          const cleanText = text.trim();
-          const existingIdx = segmentsRef.current.findIndex((s) =>
-            chunkId != null ? s.id === chunkId : (s.status === 'pending' && Math.abs(s.startOffset - (startOffset || 0)) < 3.0)
-          );
-
-          let segItem;
-          if (existingIdx !== -1) {
-            segmentsRef.current[existingIdx] = {
-              ...segmentsRef.current[existingIdx],
-              text: cleanText,
-              endOffset: endOffset || segmentsRef.current[existingIdx].startOffset + 3.0,
-              status: 'complete',
-              speakerName: segmentsRef.current[existingIdx].speakerName || speakerName,
-            };
-            segItem = segmentsRef.current[existingIdx];
-          } else {
-            segItem = {
-              id: chunkId || ++segmentIdRef.current,
-              text: cleanText,
-              speakerName,
-              startOffset: startOffset || 0,
-              endOffset: endOffset || (startOffset || 0) + 3.0,
-              status: 'complete',
-              timestamp: Date.now(),
-            };
-            segmentsRef.current.push(segItem);
-          }
-          setSegments([...segmentsRef.current]);
-          syncToSFU(segmentsRef.current);
-
-          // If current language is not English, translate this incoming segment immediately
-          const currentLang = selectedLanguageRef.current;
-          if (currentLang && currentLang !== 'en' && segItem?.id) {
-            socket.emit('translateText', { text: cleanText, targetLang: currentLang }, (res) => {
-              if (res?.translatedText) {
-                setTranslatedSegments((prev) => {
-                  const next = { ...prev, [`${segItem.id}_${currentLang}`]: res.translatedText };
-                  translatedSegmentsRef.current = next;
-                  return next;
-                });
-              }
-            });
-          }
-        });
+        llmSocketRef.current.on('transcriptSegment', handleSegment);
       } else {
         llmSocketRef.current.emit('startSession', { sessionId: roomId });
       }
     } catch (e) {
-      console.warn('[LLM Server] Connect error:', e.message);
+      console.warn('[LLM Server] Standalone connect notice (embedded STT active):', e.message);
+    }
+
+    // 3. Optional: Browser Native Web Speech API for instantaneous real-time preview
+    const SpeechRecognition = typeof window !== 'undefined'
+      ? (window.SpeechRecognition || window.webkitSpeechRecognition)
+      : null;
+    if (SpeechRecognition && !speechRecognitionRef.current) {
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = selectedLanguageRef.current === 'es' ? 'es-ES' : (selectedLanguageRef.current === 'hi' ? 'hi-IN' : 'en-US');
+
+        recognition.onresult = (event) => {
+          let latestFinal = '';
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              latestFinal += event.results[i][0].transcript;
+            }
+          }
+          const trimmed = latestFinal.trim();
+          if (trimmed) {
+            handleSegment({
+              chunkId: ++segmentIdRef.current,
+              text: trimmed,
+              startOffset: parseFloat(((Date.now() - (meetingStartRef.current || Date.now())) / 1000).toFixed(2)),
+              endOffset: null,
+            });
+          }
+        };
+
+        recognition.onerror = () => {};
+        recognition.onend = () => {
+          if (isRecordingRef.current) {
+            try { recognition.start(); } catch (_) {}
+          }
+        };
+
+        recognition.start();
+        speechRecognitionRef.current = recognition;
+        console.log('[WebSpeech API] Browser live speech recognition active.');
+      } catch (speechErr) {
+        console.warn('[WebSpeech API] Notice:', speechErr.message);
+      }
     }
 
     const audioTracks = localStream.getAudioTracks();
@@ -330,19 +391,35 @@ export function useTranscript({ roomId, role, localStream, micEnabled = true, le
       ? 'audio/webm;codecs=opus'
       : 'audio/webm';
 
+    // Helper to send audio chunk to best available socket (Standalone STT or Embedded Main Socket)
+    const sendAudioPayload = (payload) => {
+      if (llmSocketRef.current?.connected) {
+        llmSocketRef.current.emit('audioChunk', payload);
+      } else if (socket?.connected) {
+        socket.emit('audioChunk', payload);
+      } else {
+        audioQueueRef.current.push(payload);
+        if (audioQueueRef.current.length > 30) {
+          audioQueueRef.current.shift(); // Bound queue to prevent memory leak
+        }
+      }
+    };
+
     const startAudioChunkRecorder = () => {
       if (!isRecordingRef.current) return;
 
       const currentAudioTrack = localStream?.getAudioTracks()[0];
-      if (!currentAudioTrack || !currentAudioTrack.enabled) {
-        chunkTimerRef.current = setTimeout(startAudioChunkRecorder, 1000);
+      if (!currentAudioTrack || !currentAudioTrack.enabled || !micEnabled) {
+        chunkTimerRef.current = setTimeout(startAudioChunkRecorder, 1500);
         return;
       }
 
       let recorder;
       try {
-        const audioOnlyStream = new MediaStream([currentAudioTrack]);
-        recorder = new MediaRecorder(audioOnlyStream, { mimeType });
+        if (!persistentAudioStreamRef.current || persistentAudioStreamRef.current.getAudioTracks()[0]?.id !== currentAudioTrack.id) {
+          persistentAudioStreamRef.current = new MediaStream([currentAudioTrack]);
+        }
+        recorder = new MediaRecorder(persistentAudioStreamRef.current, { mimeType });
       } catch (err) {
         console.warn('[Transcription] Error creating MediaRecorder:', err);
         chunkTimerRef.current = setTimeout(startAudioChunkRecorder, 2000);
@@ -359,37 +436,22 @@ export function useTranscript({ roomId, role, localStream, micEnabled = true, le
       };
 
       recorder.onstop = () => {
-        if (chunks.length > 0 && isRecordingRef.current) {
+        if (chunks.length > 0 && isRecordingRef.current && micEnabled) {
           const completeBlob = new Blob(chunks, { type: mimeType });
-          const now = Date.now();
-          const startOffset = parseFloat(((now - (meetingStartRef.current || now)) / 1000).toFixed(2));
-          const chunkId = ++segmentIdRef.current;
+          if (completeBlob.size > 1200) {
+            const now = Date.now();
+            const startOffset = parseFloat(((now - (meetingStartRef.current || now)) / 1000).toFixed(2));
+            const chunkId = ++segmentIdRef.current;
 
-          const newSeg = {
-            id: chunkId,
-            text: '',
-            speakerName,
-            startOffset,
-            endOffset: null,
-            timestamp: now,
-            status: 'pending',
-          };
+            const payload = {
+              sessionId: roomId,
+              chunk: completeBlob,
+              startOffset,
+              chunkId,
+              language: selectedLanguageRef.current,
+            };
 
-          segmentsRef.current = [...segmentsRef.current, newSeg];
-          setSegments([...segmentsRef.current]);
-
-          const payload = {
-            sessionId: roomId,
-            chunk: completeBlob,
-            startOffset,
-            chunkId,
-            language: selectedLanguageRef.current,
-          };
-
-          if (llmSocketRef.current?.connected) {
-            llmSocketRef.current.emit('audioChunk', payload);
-          } else {
-            audioQueueRef.current.push(payload);
+            sendAudioPayload(payload);
           }
         }
 
@@ -402,7 +464,7 @@ export function useTranscript({ roomId, role, localStream, micEnabled = true, le
 
       chunkTimerRef.current = setTimeout(() => {
         if (recorder && recorder.state === 'recording') {
-          recorder.stop();
+          try { recorder.stop(); } catch (_) {}
         }
       }, CHUNK_INTERVAL_MS);
     };
@@ -423,6 +485,14 @@ export function useTranscript({ roomId, role, localStream, micEnabled = true, le
       try { mediaRecorderRef.current.stop(); } catch (e) {}
     }
     clearInterval(syncIntervalRef.current);
+
+    if (speechRecognitionRef.current) {
+      try { speechRecognitionRef.current.stop(); } catch (_) {}
+      speechRecognitionRef.current = null;
+    }
+
+    socket.off('transcriptSegment');
+    socket.emit('endSession', { sessionId: roomId });
 
     syncToSFU(segmentsRef.current);
     socket.emit('endTranscription', { roomId });
@@ -507,18 +577,35 @@ export function useTranscript({ roomId, role, localStream, micEnabled = true, le
     }, 500);
   }, [lectureId, roomId]);
 
+  // Fast, lightweight helper to render downscaled base64 image without freezing UI
+  const renderScaledDataUrl = (sourceEl, originalW, originalH) => {
+    const maxDim = 1280;
+    let w = originalW || 1280;
+    let h = originalH || 720;
+    if (w > maxDim || h > maxDim) {
+      if (w >= h) {
+        h = Math.round((h * maxDim) / w);
+        w = maxDim;
+      } else {
+        w = Math.round((w * maxDim) / h);
+        h = maxDim;
+      }
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d', { alpha: false });
+    ctx.drawImage(sourceEl, 0, 0, w, h);
+    return canvas.toDataURL('image/jpeg', 0.78);
+  };
+
   // Robust helper to capture JPEG base64 from either MediaStream or HTMLVideoElement
   const grabFrameBase64 = async (source) => {
     if (!source) throw new Error('No video source provided');
 
     // Case 1: source is an HTMLVideoElement that is already rendering frames
     if (source instanceof HTMLVideoElement && source.videoWidth > 0) {
-      const canvas = document.createElement('canvas');
-      canvas.width = source.videoWidth;
-      canvas.height = source.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
-      return canvas.toDataURL('image/jpeg', 0.9);
+      return renderScaledDataUrl(source, source.videoWidth, source.videoHeight);
     }
 
     // Resolve MediaStream (if source is MediaStream, or if video element wraps a stream)
@@ -539,16 +626,10 @@ export function useTranscript({ roomId, role, localStream, micEnabled = true, le
       );
 
       if (activeDomVideo && activeDomVideo.videoWidth > 0) {
-        const canvas = document.createElement('canvas');
-        canvas.width = activeDomVideo.videoWidth;
-        canvas.height = activeDomVideo.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(activeDomVideo, 0, 0, canvas.width, canvas.height);
-        return canvas.toDataURL('image/jpeg', 0.9);
+        return renderScaledDataUrl(activeDomVideo, activeDomVideo.videoWidth, activeDomVideo.videoHeight);
       }
 
       // If no active DOM video element is found, attach a temporary video element to DOM
-      // (Chrome's compositor requires DOM attachment to pump frames for display/webcam streams)
       return new Promise((resolve, reject) => {
         const tempVideo = document.createElement('video');
         tempVideo.muted = true;
@@ -564,16 +645,10 @@ export function useTranscript({ roomId, role, localStream, micEnabled = true, le
           if (finished) return;
           finished = true;
           try {
-            const canvas = document.createElement('canvas');
-            const w = tempVideo.videoWidth || 1280;
-            const h = tempVideo.videoHeight || 720;
-            canvas.width = w;
-            canvas.height = h;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(tempVideo, 0, 0, w, h);
+            const dataUrl = renderScaledDataUrl(tempVideo, tempVideo.videoWidth, tempVideo.videoHeight);
             tempVideo.srcObject = null;
             tempVideo.remove();
-            resolve(canvas.toDataURL('image/jpeg', 0.9));
+            resolve(dataUrl);
           } catch (err) {
             tempVideo.srcObject = null;
             tempVideo.remove();
@@ -587,7 +662,6 @@ export function useTranscript({ roomId, role, localStream, micEnabled = true, le
           tempVideo.play().then(cleanupAndFinish).catch(cleanupAndFinish);
         };
 
-        // Poll videoWidth > 0
         const poll = setInterval(() => {
           if (tempVideo.videoWidth > 0) {
             clearInterval(poll);
@@ -604,18 +678,13 @@ export function useTranscript({ roomId, role, localStream, micEnabled = true, le
             tempVideo.remove();
             reject(new Error('Video frame capture timed out (inactive stream)'));
           }
-        }, 3000);
+        }, 2500);
       });
     }
 
     // Fallback: regular HTMLVideoElement
     if (source instanceof HTMLVideoElement) {
-      const canvas = document.createElement('canvas');
-      canvas.width = source.videoWidth || 1280;
-      canvas.height = source.videoHeight || 720;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
-      return canvas.toDataURL('image/jpeg', 0.9);
+      return renderScaledDataUrl(source, source.videoWidth, source.videoHeight);
     }
 
     throw new Error('Unsupported video source format');

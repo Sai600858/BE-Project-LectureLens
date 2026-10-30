@@ -445,7 +445,20 @@ CRITICAL INSTRUCTIONS:
   let fallbackTimestamp = null;
   let fallbackTimestampSec = null;
 
-  if (scoredChunks.length > 0) {
+  const metaWords = new Set(['what', 'did', 'say', 'says', 'said', 'tell', 'ask', 'asked', 'professor', 'prof', 'teacher', 'instructor', 'explain', 'mention', 'talk', 'about', 'can', 'you', 'the', 'how', 'why', 'who']);
+  const topicWords = cleanQuestion.toLowerCase().split(/\s+/).filter((w) => w.length > 2 && !metaWords.has(w) && !STOP_WORDS.has(w));
+
+  const allLectureText = (
+    segments.map((s) => s.text).join(' ') + ' ' +
+    boardContents.map((b) => (b.extracted_text || '') + ' ' + (b.equation || '')).join(' ') + ' ' +
+    screenContents.map((s) => (s.slide_title || '') + ' ' + (s.extracted_text || '')).join(' ')
+  ).toLowerCase();
+
+  const isRelevantTopic = isOverview || topicWords.length === 0 || topicWords.some((w) => allLectureText.includes(w));
+
+  if (!isRelevantTopic) {
+    fallbackAnswer = `This topic was not covered or supported by the evidence in this lecture. Based on the transcript, this lecture focused on "${lecture.title}". To prevent hallucinations, the system abstains from answering unverified questions.`;
+  } else if (scoredChunks.length > 0) {
     const top = scoredChunks[0];
     fallbackTimestamp = formatOffset(top.timestamp);
     fallbackTimestampSec = top.timestamp;
@@ -455,7 +468,7 @@ CRITICAL INSTRUCTIONS:
     fallbackTimestampSec = segments[0].start_time;
     fallbackAnswer = `Based on the lecture transcription, the lecture began with [Timestamp ${fallbackTimestamp}] ${segments[0].speaker_name || 'Speaker'}: "${segments[0].text}"`;
   } else {
-    fallbackAnswer = `The lecture "${lecture.title}" does not contain specific information matching "${cleanQuestion}".`;
+    fallbackAnswer = `This topic was not covered in this lecture. Based on the transcript, this lecture focused on "${lecture.title}".`;
   }
 
   return {

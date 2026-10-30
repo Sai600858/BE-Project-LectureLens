@@ -8,12 +8,14 @@ import { BoardSnapshotCompact } from '../components/BoardSnapshot';
 import Badge from '../components/Badge';
 
 /** Video Tile Component */
-function VideoTile({ stream, muted = false, label, isScreen = false }) {
+const VideoTile = React.memo(function VideoTile({ stream, muted = false, label, isScreen = false }) {
   const videoRef = useRef(null);
 
   useEffect(() => {
     if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
+      if (videoRef.current.srcObject !== stream) {
+        videoRef.current.srcObject = stream;
+      }
     }
   }, [stream]);
 
@@ -32,18 +34,27 @@ function VideoTile({ stream, muted = false, label, isScreen = false }) {
       </div>
     </div>
   );
-}
+}, (prev, next) => {
+  return (
+    prev.stream?.id === next.stream?.id &&
+    prev.muted === next.muted &&
+    prev.label === next.label &&
+    prev.isScreen === next.isScreen
+  );
+});
 
 /** Invisible Audio Player for remote audio-only streams */
-function AudioPlayer({ stream }) {
+const AudioPlayer = React.memo(function AudioPlayer({ stream }) {
   const audioRef = useRef(null);
   useEffect(() => {
     if (audioRef.current && stream) {
-      audioRef.current.srcObject = stream;
+      if (audioRef.current.srcObject !== stream) {
+        audioRef.current.srcObject = stream;
+      }
     }
   }, [stream]);
   return <audio ref={audioRef} autoPlay />;
-}
+});
 
 export default function RoomPage() {
   const { roomId: roomIdParam } = useParams();
@@ -148,12 +159,20 @@ export default function RoomPage() {
     setAutoSnapSource(activeScreenSource);
   }, [screenStream, remoteScreenStream, setAutoSnapSource]);
 
+  const prevMessagesLenRef = useRef(0);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length > prevMessagesLenRef.current) {
+      prevMessagesLenRef.current = messages.length;
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    }
   }, [messages]);
 
+  const prevSegmentsLenRef = useRef(0);
   useEffect(() => {
-    transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (segments.length > prevSegmentsLenRef.current) {
+      prevSegmentsLenRef.current = segments.length;
+      transcriptEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    }
   }, [segments]);
 
   const handleSend = () => {

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import * as THREE from 'three';
 import Badge from '../Badge';
 import Button from '../Button';
+import { isWebGLAvailable } from '../../utils/webglSupport';
 
 // Default Weight Presets
 const PRESETS = {
@@ -52,7 +53,7 @@ const PRESETS = {
   },
 };
 
-// Math activation functions
+// Math activation functions with numerical clamping
 function activate(val, type) {
   if (type === 'relu') return Math.max(0, val);
   if (type === 'tanh') return Math.tanh(val);
@@ -68,6 +69,7 @@ export default function NeuralNetwork3D() {
   const neuronMeshesRef = useRef({ inputs: [], hiddens: [], outputs: [] });
   const synapseLinesRef = useRef([]);
   const pulsesRef = useRef([]);
+  const timeoutsRef = useRef([]);
 
   // Network State
   const [inputs, setInputs] = useState([0.8, 0.2]); // x1, x2
@@ -75,12 +77,17 @@ export default function NeuralNetwork3D() {
   const [selectedPreset, setSelectedPreset] = useState('classifier');
   const [weights, setWeights] = useState(PRESETS.classifier);
   const [isPropagating, setIsPropagating] = useState(false);
-  const [propagationStage, setPropagationStage] = useState('idle'); // 'idle' | 'layer1' | 'layer2' | 'complete'
+  const [propagationStage, setPropagationStage] = useState('idle');
   const [showAccessibleTable, setShowAccessibleTable] = useState(false);
   const [actionLog, setActionLog] = useState('Network ready. Adjust inputs or click "Forward Pass" to calculate layer outputs.');
+  const [webglSupported, setWebglSupported] = useState(true);
 
-  // Check reduced motion
-  const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Safe timeout helper
+  const addTimeout = (fn, delay) => {
+    const id = setTimeout(fn, delay);
+    timeoutsRef.current.push(id);
+    return id;
+  };
 
   // Real Mathematical Forward Propagation Calculation
   const computedLayers = useMemo(() => {
@@ -105,7 +112,7 @@ export default function NeuralNetwork3D() {
     // Activated output: a_o = f(z_o)
     const outputA = outputZ.map((z) => activate(z, activationFn));
 
-    // Softmax probabilities for output display
+    // Softmax probabilities for output distribution
     const maxZ = Math.max(...outputZ);
     const expZ = outputZ.map((z) => Math.exp(z - maxZ));
     const sumExp = expZ.reduce((a, b) => a + b, 0);
@@ -128,15 +135,14 @@ export default function NeuralNetwork3D() {
     canvas.height = 128;
     const ctx = canvas.getContext('2d');
 
-    // Background pill
-    ctx.fillStyle = 'rgba(11, 15, 25, 0.85)';
-    ctx.roundRect ? ctx.roundRect(8, 8, 240, 112, 16) : ctx.rect(8, 8, 240, 112);
+    ctx.fillStyle = 'rgba(11, 15, 25, 0.88)';
+    if (ctx.roundRect) ctx.roundRect(8, 8, 240, 112, 16);
+    else ctx.rect(8, 8, 240, 112);
     ctx.fill();
     ctx.strokeStyle = color;
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    // Text label
     ctx.fillStyle = '#f8fafc';
     ctx.font = 'bold 36px monospace';
     ctx.textAlign = 'center';
@@ -145,7 +151,7 @@ export default function NeuralNetwork3D() {
 
     if (subtext) {
       ctx.fillStyle = color;
-      ctx.font = '24px monospace';
+      ctx.font = 'bold 24px monospace';
       ctx.fillText(subtext, 128, 88);
     }
 
@@ -153,35 +159,44 @@ export default function NeuralNetwork3D() {
     const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
     const sprite = new THREE.Sprite(spriteMat);
     sprite.scale.set(1.9, 0.95, 1);
-    return { sprite, texture };
+    sprite.userData = { texture };
+    return sprite;
   };
 
   // Three.js Scene Lifecycle
   useEffect(() => {
+    if (!isWebGLAvailable()) {
+      setWebglSupported(false);
+      return;
+    }
+
     const container = mountRef.current;
     if (!container) return;
 
     const width = container.clientWidth || 800;
     const height = container.clientHeight || 460;
 
-    // Scene
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      rendererRef.current = renderer;
+      container.appendChild(renderer.domElement);
+    } catch (err) {
+      console.warn('WebGL init failed:', err);
+      setWebglSupported(false);
+      return;
+    }
+
     const scene = new THREE.Scene();
     sceneRef.current = scene;
     scene.background = new THREE.Color(0x060911);
 
-    // Camera
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
     camera.position.set(0, 0, 13.5);
     camera.lookAt(0, 0, 0);
 
-    // Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    rendererRef.current = renderer;
-    container.appendChild(renderer.domElement);
-
-    // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
     const pointLight = new THREE.PointLight(0x38bdf8, 2.5, 30);
@@ -189,27 +204,23 @@ export default function NeuralNetwork3D() {
     scene.add(pointLight);
 
     // Neuron Positioning Definitions
-    // Layer 0: X = -4.5, 2 inputs at Y = 1.6, -1.6
     const inputPositions = [
       new THREE.Vector3(-4.5, 1.6, 0),
       new THREE.Vector3(-4.5, -1.6, 0),
     ];
 
-    // Layer 1: X = 0, 3 hidden at Y = 2.4, 0, -2.4
     const hiddenPositions = [
       new THREE.Vector3(0, 2.4, 0),
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(0, -2.4, 0),
     ];
 
-    // Layer 2: X = +4.5, 2 outputs at Y = 1.6, -1.6
     const outputPositions = [
       new THREE.Vector3(4.5, 1.6, 0),
       new THREE.Vector3(4.5, -1.6, 0),
     ];
 
     const neuronSphereGeo = new THREE.SphereGeometry(0.75, 24, 24);
-    const texturesToDispose = [];
 
     // Build Input Neurons
     const inputMeshes = inputPositions.map((pos, i) => {
@@ -224,12 +235,11 @@ export default function NeuralNetwork3D() {
       mesh.position.copy(pos);
       scene.add(mesh);
 
-      const label = createTextSprite(`x${i + 1}`, `${inputs[i].toFixed(2)}`, '#38bdf8');
-      label.sprite.position.set(pos.x, pos.y + 1.25, 0.5);
-      scene.add(label.sprite);
-      texturesToDispose.push(label.texture);
+      const sprite = createTextSprite(`x${i + 1}`, `${inputs[i].toFixed(2)}`, '#38bdf8');
+      sprite.position.set(pos.x, pos.y + 1.25, 0.5);
+      scene.add(sprite);
 
-      return { mesh, label, pos };
+      return { mesh, sprite, pos };
     });
 
     // Build Hidden Neurons
@@ -245,12 +255,11 @@ export default function NeuralNetwork3D() {
       mesh.position.copy(pos);
       scene.add(mesh);
 
-      const label = createTextSprite(`h${j + 1}`, `${computedLayers.hiddenA[j].toFixed(2)}`, '#c084fc');
-      label.sprite.position.set(pos.x, pos.y + 1.25, 0.5);
-      scene.add(label.sprite);
-      texturesToDispose.push(label.texture);
+      const sprite = createTextSprite(`h${j + 1}`, `${computedLayers.hiddenA[j].toFixed(2)}`, '#c084fc');
+      sprite.position.set(pos.x, pos.y + 1.25, 0.5);
+      scene.add(sprite);
 
-      return { mesh, label, pos };
+      return { mesh, sprite, pos };
     });
 
     // Build Output Neurons
@@ -266,12 +275,11 @@ export default function NeuralNetwork3D() {
       mesh.position.copy(pos);
       scene.add(mesh);
 
-      const label = createTextSprite(`y${k + 1}`, `${computedLayers.outputA[k].toFixed(2)}`, '#34d399');
-      label.sprite.position.set(pos.x, pos.y + 1.25, 0.5);
-      scene.add(label.sprite);
-      texturesToDispose.push(label.texture);
+      const sprite = createTextSprite(`y${k + 1}`, `${computedLayers.outputA[k].toFixed(2)}`, '#34d399');
+      sprite.position.set(pos.x, pos.y + 1.25, 0.5);
+      scene.add(sprite);
 
-      return { mesh, label, pos };
+      return { mesh, sprite, pos };
     });
 
     neuronMeshesRef.current = { inputs: inputMeshes, hiddens: hiddenMeshes, outputs: outputMeshes };
@@ -315,7 +323,6 @@ export default function NeuralNetwork3D() {
 
     synapseLinesRef.current = lines;
 
-    // Resize Observer
     const resizeObserver = new ResizeObserver((entries) => {
       if (!entries || entries.length === 0) return;
       const { width: newW, height: newH } = entries[0].contentRect;
@@ -327,7 +334,7 @@ export default function NeuralNetwork3D() {
     });
     resizeObserver.observe(container);
 
-    // Render / Animation Loop
+    // Animation Loop
     let lastTime = performance.now();
     const animate = () => {
       reqIdRef.current = requestAnimationFrame(animate);
@@ -335,7 +342,7 @@ export default function NeuralNetwork3D() {
       const dt = (now - lastTime) / 1000;
       lastTime = now;
 
-      // Animate Active Pulses along synapses
+      // Animate active pulses
       if (pulsesRef.current.length > 0) {
         for (let idx = pulsesRef.current.length - 1; idx >= 0; idx--) {
           const p = pulsesRef.current[idx];
@@ -347,7 +354,6 @@ export default function NeuralNetwork3D() {
             pulsesRef.current.splice(idx, 1);
           } else {
             p.mesh.position.lerpVectors(p.fromPos, p.toPos, p.progress);
-            // Slight glow pulse
             const pulseScale = 1.0 + Math.sin(p.progress * Math.PI) * 0.6;
             p.mesh.scale.setScalar(pulseScale);
           }
@@ -356,15 +362,13 @@ export default function NeuralNetwork3D() {
 
       renderer.render(scene, camera);
     };
-
     animate();
 
-    // Cleanup on Unmount
     return () => {
       if (reqIdRef.current) cancelAnimationFrame(reqIdRef.current);
       resizeObserver.disconnect();
+      timeoutsRef.current.forEach(clearTimeout);
 
-      // Dispose Pulses
       pulsesRef.current.forEach((p) => {
         scene.remove(p.mesh);
         p.mesh.geometry.dispose();
@@ -372,60 +376,91 @@ export default function NeuralNetwork3D() {
       });
       pulsesRef.current = [];
 
-      // Dispose Synapses
       lines.forEach((l) => {
         scene.remove(l.lineMesh);
         l.lineMesh.geometry.dispose();
         l.lineMesh.material.dispose();
       });
 
-      // Dispose Neurons and Labels
       [...inputMeshes, ...hiddenMeshes, ...outputMeshes].forEach((item) => {
         scene.remove(item.mesh);
         item.mesh.geometry.dispose();
         item.mesh.material.dispose();
-        scene.remove(item.label.sprite);
-        item.label.sprite.material.dispose();
+        if (item.sprite?.userData?.texture) item.sprite.userData.texture.dispose();
+        scene.remove(item.sprite);
+        item.sprite.material.dispose();
       });
 
-      texturesToDispose.forEach((tex) => tex.dispose());
       neuronSphereGeo.dispose();
 
-      if (rendererRef.current && rendererRef.current.domElement) {
+      if (rendererRef.current?.domElement && container.contains(rendererRef.current.domElement)) {
         container.removeChild(rendererRef.current.domElement);
-        rendererRef.current.dispose();
       }
+      renderer.dispose();
     };
-  }, [weights]); // Recreate topology on weight preset switch
+  }, [weights]);
 
-  // Update Neuron Visuals when values/activations change
+  // Update Neuron Visuals & 3D text sprites when values/activations change
   useEffect(() => {
     const meshes = neuronMeshesRef.current;
-    if (!meshes || !meshes.inputs || meshes.inputs.length === 0) return;
+    if (!meshes || !meshes.inputs || meshes.inputs.length === 0 || !sceneRef.current) return;
 
     // Update Input Neurons
     inputs.forEach((val, i) => {
-      if (meshes.inputs[i]) {
+      const item = meshes.inputs[i];
+      if (item) {
         const intensity = 0.2 + Math.min(1.0, Math.max(0, val)) * 0.7;
-        meshes.inputs[i].mesh.material.emissiveIntensity = intensity;
+        item.mesh.material.emissiveIntensity = intensity;
+
+        // Update 3D Sprite
+        if (item.sprite?.userData?.texture) item.sprite.userData.texture.dispose();
+        sceneRef.current.remove(item.sprite);
+        item.sprite.material.dispose();
+
+        const newSprite = createTextSprite(`x${i + 1}`, `${val.toFixed(2)}`, '#38bdf8');
+        newSprite.position.set(item.pos.x, item.pos.y + 1.25, 0.5);
+        sceneRef.current.add(newSprite);
+        item.sprite = newSprite;
       }
     });
 
     // Update Hidden Neurons
     computedLayers.hiddenA.forEach((act, j) => {
-      if (meshes.hiddens[j]) {
+      const item = meshes.hiddens[j];
+      if (item) {
         const intensity = 0.2 + Math.min(1.0, Math.max(0, act)) * 0.8;
-        meshes.hiddens[j].mesh.material.emissiveIntensity = intensity;
-        meshes.hiddens[j].mesh.scale.setScalar(0.9 + act * 0.3);
+        item.mesh.material.emissiveIntensity = intensity;
+        item.mesh.scale.setScalar(0.9 + act * 0.3);
+
+        // Update 3D Sprite
+        if (item.sprite?.userData?.texture) item.sprite.userData.texture.dispose();
+        sceneRef.current.remove(item.sprite);
+        item.sprite.material.dispose();
+
+        const newSprite = createTextSprite(`h${j + 1}`, `${act.toFixed(2)}`, '#c084fc');
+        newSprite.position.set(item.pos.x, item.pos.y + 1.25, 0.5);
+        sceneRef.current.add(newSprite);
+        item.sprite = newSprite;
       }
     });
 
     // Update Output Neurons
     computedLayers.outputA.forEach((act, k) => {
-      if (meshes.outputs[k]) {
+      const item = meshes.outputs[k];
+      if (item) {
         const intensity = 0.2 + Math.min(1.0, Math.max(0, act)) * 0.8;
-        meshes.outputs[k].mesh.material.emissiveIntensity = intensity;
-        meshes.outputs[k].mesh.scale.setScalar(0.9 + act * 0.3);
+        item.mesh.material.emissiveIntensity = intensity;
+        item.mesh.scale.setScalar(0.9 + act * 0.3);
+
+        // Update 3D Sprite
+        if (item.sprite?.userData?.texture) item.sprite.userData.texture.dispose();
+        sceneRef.current.remove(item.sprite);
+        item.sprite.material.dispose();
+
+        const newSprite = createTextSprite(`y${k + 1}`, `${act.toFixed(2)}`, '#34d399');
+        newSprite.position.set(item.pos.x, item.pos.y + 1.25, 0.5);
+        sceneRef.current.add(newSprite);
+        item.sprite = newSprite;
       }
     });
   }, [inputs, computedLayers]);
@@ -457,11 +492,9 @@ export default function NeuralNetwork3D() {
     setPropagationStage('layer1');
     setActionLog(`1️⃣ Input layer [x1=${inputs[0].toFixed(2)}, x2=${inputs[1].toFixed(2)}] sends signals across Layer 1 synapses...`);
 
-    // Fire Layer 1 pulses
     firePulses('layer1', 0x38bdf8);
 
-    // Step 2: Hidden layer activation
-    setTimeout(() => {
+    addTimeout(() => {
       setPropagationStage('layer2');
       setActionLog(
         `2️⃣ Hidden neurons activated (${activationFn.toUpperCase()}): h1=${computedLayers.hiddenA[0].toFixed(2)}, h2=${computedLayers.hiddenA[1].toFixed(2)}, h3=${computedLayers.hiddenA[2].toFixed(2)}. Sending signals to output layer...`
@@ -469,8 +502,7 @@ export default function NeuralNetwork3D() {
       firePulses('layer2', 0xa855f7);
     }, 700);
 
-    // Step 3: Output layer computed
-    setTimeout(() => {
+    addTimeout(() => {
       setPropagationStage('complete');
       const winner = computedLayers.outputA[0] >= computedLayers.outputA[1] ? 'y1 (Class A)' : 'y2 (Class B)';
       setActionLog(
@@ -480,16 +512,31 @@ export default function NeuralNetwork3D() {
     }, 1400);
   }, [isPropagating, inputs, computedLayers, activationFn]);
 
-  // Input Slider Handler
+  // Input Slider Handler with robust number validation
   const handleInputChange = (idx, val) => {
     const num = parseFloat(val);
+    if (isNaN(num)) return;
+    const clamped = Math.max(-2.0, Math.min(2.0, num));
     setInputs((prev) => {
       const next = [...prev];
-      next[idx] = num;
+      next[idx] = clamped;
       return next;
     });
     setPropagationStage('idle');
-    setActionLog(`Input x${idx + 1} adjusted to ${num.toFixed(2)}. Forward pass recalculated.`);
+    setActionLog(`Input x${idx + 1} adjusted to ${clamped.toFixed(2)}. Forward pass recalculated.`);
+  };
+
+  // Reset Network Action
+  const handleReset = () => {
+    timeoutsRef.current.forEach(clearTimeout);
+    timeoutsRef.current = [];
+    setInputs([0.8, 0.2]);
+    setActivationFn('sigmoid');
+    setSelectedPreset('classifier');
+    setWeights(PRESETS.classifier);
+    setIsPropagating(false);
+    setPropagationStage('idle');
+    setActionLog('Network reset to default inputs [0.80, 0.20] and Classifier preset.');
   };
 
   return (
@@ -519,6 +566,14 @@ export default function NeuralNetwork3D() {
             >
               {showAccessibleTable ? 'Hide Math Breakdown' : 'Show Math Breakdown'}
             </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleReset}
+              aria-label="Reset neural network state"
+            >
+              ↺ Reset Network
+            </Button>
           </div>
         </div>
 
@@ -530,37 +585,44 @@ export default function NeuralNetwork3D() {
 
       {/* Main Lab Grid: 3D Canvas + Control Deck */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: 3D Three.js Viewport (7 Cols) */}
+        {/* Left Column: 3D Three.js Viewport or Fallback (7 Cols) */}
         <div className="lg:col-span-7 flex flex-col gap-3">
-          <div
-            className="relative w-full rounded-xl overflow-hidden border border-border-subtle bg-slate-950 shadow-card flex items-center justify-center min-h-[460px]"
-            style={{ touchAction: 'none' }}
-          >
-            {/* Three.js DOM Mount */}
-            <div ref={mountRef} className="w-full h-full min-h-[460px]" aria-hidden="true" />
+          {webglSupported ? (
+            <div
+              className="relative w-full rounded-xl overflow-hidden border border-border-subtle bg-slate-950 shadow-card flex items-center justify-center min-h-[460px]"
+              style={{ touchAction: 'none' }}
+            >
+              <div ref={mountRef} className="w-full h-full min-h-[460px]" aria-hidden="true" />
 
-            {/* In-Canvas Overlay Status Badges */}
-            <div className="absolute top-3 left-3 flex flex-wrap gap-2 pointer-events-none">
-              <Badge variant="cyan" size="sm">Input Layer (2)</Badge>
-              <Badge variant="purple" size="sm">Hidden Layer (3)</Badge>
-              <Badge variant="emerald" size="sm">Output Layer (2)</Badge>
-            </div>
-
-            {/* Synapse Weight Legend */}
-            <div className="absolute bottom-3 left-3 right-3 bg-surface-card/90 backdrop-blur-md border border-border-subtle rounded-lg p-2.5 flex flex-wrap items-center justify-between text-[11px] text-text-muted gap-2">
-              <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
-                  <strong className="text-text-primary">Green:</strong> Positive Weight (Excitatory)
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
-                  <strong className="text-text-primary">Red:</strong> Negative Weight (Inhibitory)
-                </span>
+              <div className="absolute top-3 left-3 flex flex-wrap gap-2 pointer-events-none">
+                <Badge variant="cyan" size="sm">Input Layer (2)</Badge>
+                <Badge variant="purple" size="sm">Hidden Layer (3)</Badge>
+                <Badge variant="emerald" size="sm">Output Layer (2)</Badge>
               </div>
-              <span>Line Opacity = Weight Magnitude |w|</span>
+
+              <div className="absolute bottom-3 left-3 right-3 bg-surface-card/90 backdrop-blur-md border border-border-subtle rounded-lg p-2.5 flex flex-wrap items-center justify-between text-[11px] text-text-muted gap-2">
+                <div className="flex items-center gap-4">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+                    <strong className="text-text-primary">Green:</strong> Positive Weight
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
+                    <strong className="text-text-primary">Red:</strong> Negative Weight
+                  </span>
+                </div>
+                <span>Line Opacity = Weight Magnitude |w|</span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 text-amber-200 text-sm flex items-start gap-3">
+              <span className="text-2xl">⚠️</span>
+              <div>
+                <strong className="block font-semibold mb-1">WebGL Hardware Acceleration Unavailable</strong>
+                Hardware 3D rendering is not supported in this browser. All layer activations, weights, and Softmax probabilities are calculated and inspected in the math breakdown below.
+              </div>
+            </div>
+          )}
 
           {/* Action Log / Feedback Bar */}
           <div
@@ -581,7 +643,6 @@ export default function NeuralNetwork3D() {
               <span className="text-xs text-text-muted lowercase">step-by-step</span>
             </h3>
 
-            {/* Trigger Button */}
             <Button
               variant="primary"
               size="lg"
@@ -640,7 +701,7 @@ export default function NeuralNetwork3D() {
               <div key={idx} className="flex flex-col gap-1">
                 <div className="flex justify-between items-center text-xs">
                   <span className="font-semibold text-text-primary">
-                    Input Neuron $x_{idx + 1}$
+                    Input Neuron x{idx + 1}
                   </span>
                   <span className="font-mono text-cyan-400 font-bold">{val.toFixed(2)}</span>
                 </div>
@@ -692,73 +753,45 @@ export default function NeuralNetwork3D() {
       </div>
 
       {/* Accessible Mathematical Breakdown & Fallback Table */}
-      {showAccessibleTable && (
+      {(showAccessibleTable || !webglSupported) && (
         <div className="rounded-xl border border-border-subtle bg-surface-card p-5 shadow-card animate-fadeIn">
           <h3 className="text-base font-bold text-text-primary mb-3">
             Complete Mathematical Step-by-Step Proof
           </h3>
-          <p className="text-xs text-text-muted mb-4">
-            This verification table shows exact numerical values for each matrix multiplication and non-linear activation pass. Screen readers and users without WebGL can inspect the algorithm state directly here.
-          </p>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border border-border-subtle rounded-lg">
-              <thead className="bg-surface-base text-text-secondary uppercase text-[11px] border-b border-border-subtle">
-                <tr>
-                  <th className="py-2.5 px-3">Neuron</th>
-                  <th className="py-2.5 px-3">Pre-activation $z = \sum w_i x_i + b$</th>
-                  <th className="py-2.5 px-3">Activation $a = f(z)$</th>
-                  <th className="py-2.5 px-3">Softmax Prob.</th>
-                  <th className="py-2.5 px-3">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-subtle font-mono">
-                {/* Inputs */}
-                {inputs.map((val, i) => (
-                  <tr key={`in-${i}`} className="hover:bg-surface-base/50">
-                    <td className="py-2 px-3 font-semibold text-cyan-400">Input $x_{i + 1}$</td>
-                    <td className="py-2 px-3 text-text-muted">—</td>
-                    <td className="py-2 px-3 text-text-primary">{val.toFixed(4)}</td>
-                    <td className="py-2 px-3 text-text-muted">—</td>
-                    <td className="py-2 px-3">
-                      <Badge variant="cyan" size="sm">Signal Source</Badge>
-                    </td>
-                  </tr>
-                ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+            {/* Hidden Layer Math */}
+            <div className="border border-border-subtle rounded-lg p-3 bg-surface-base">
+              <span className="text-cyan-400 font-bold block mb-2 font-sans">
+                Layer 1: Hidden Pre-Activations $Z^{(1)} = W_1^T X + B_1$
+              </span>
+              {computedLayers.hiddenZ.map((z, j) => (
+                <div key={j} className="mb-1.5 text-text-secondary">
+                  <span>h{j + 1}: z = ({inputs[0].toFixed(2)} × {weights.w1[0][j].toFixed(1)}) + ({inputs[1].toFixed(2)} × {weights.w1[1][j].toFixed(1)}) + {weights.b1[j].toFixed(1)} = <strong className="text-text-primary">{z.toFixed(3)}</strong></span>
+                  <div className="text-[11px] text-cyan-300">
+                    → a_{j + 1} = {activationFn}({z.toFixed(2)}) = <strong>{computedLayers.hiddenA[j].toFixed(3)}</strong>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-                {/* Hidden Neurons */}
-                {computedLayers.hiddenZ.map((z, j) => (
-                  <tr key={`hid-${j}`} className="hover:bg-surface-base/50">
-                    <td className="py-2 px-3 font-semibold text-purple-400">Hidden $h_{j + 1}$</td>
-                    <td className="py-2 px-3 text-text-secondary">
-                      ({inputs[0].toFixed(2)} × {weights.w1[0][j].toFixed(2)}) + ({inputs[1].toFixed(2)} × {weights.w1[1][j].toFixed(2)}) + {weights.b1[j].toFixed(2)} = <strong className="text-text-primary">{z.toFixed(4)}</strong>
-                    </td>
-                    <td className="py-2 px-3 text-purple-300 font-bold">{computedLayers.hiddenA[j].toFixed(4)}</td>
-                    <td className="py-2 px-3 text-text-muted">—</td>
-                    <td className="py-2 px-3">
-                      <Badge variant="purple" size="sm">Latent Feature</Badge>
-                    </td>
-                  </tr>
-                ))}
-
-                {/* Output Neurons */}
-                {computedLayers.outputZ.map((z, k) => (
-                  <tr key={`out-${k}`} className="hover:bg-surface-base/50">
-                    <td className="py-2 px-3 font-semibold text-emerald-400">Output $y_{k + 1}$</td>
-                    <td className="py-2 px-3 text-text-secondary">
-                      ({computedLayers.hiddenA[0].toFixed(2)} × {weights.w2[0][k].toFixed(2)}) + ({computedLayers.hiddenA[1].toFixed(2)} × {weights.w2[1][k].toFixed(2)}) + ({computedLayers.hiddenA[2].toFixed(2)} × {weights.w2[2][k].toFixed(2)}) + {weights.b2[k].toFixed(2)} = <strong className="text-text-primary">{z.toFixed(4)}</strong>
-                    </td>
-                    <td className="py-2 px-3 text-emerald-300 font-bold">{computedLayers.outputA[k].toFixed(4)}</td>
-                    <td className="py-2 px-3 text-amber-300 font-bold">{(computedLayers.softmax[k] * 100).toFixed(1)}%</td>
-                    <td className="py-2 px-3">
-                      <Badge variant={k === (computedLayers.outputA[0] >= computedLayers.outputA[1] ? 0 : 1) ? 'emerald' : 'neutral'} size="sm">
-                        {k === (computedLayers.outputA[0] >= computedLayers.outputA[1] ? 0 : 1) ? 'Predicted Class' : 'Alternative'}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {/* Output Layer Math */}
+            <div className="border border-border-subtle rounded-lg p-3 bg-surface-base">
+              <span className="text-emerald-400 font-bold block mb-2 font-sans">
+                Layer 2: Output Pre-Activations $Z^{(2)} = W_2^T A^{(1)} + B_2$
+              </span>
+              {computedLayers.outputZ.map((z, k) => (
+                <div key={k} className="mb-1.5 text-text-secondary">
+                  <span>y{k + 1}: z = <strong className="text-text-primary">{z.toFixed(3)}</strong></span>
+                  <div className="text-[11px] text-emerald-300">
+                    → a_{k + 1} = {activationFn}({z.toFixed(2)}) = <strong>{computedLayers.outputA[k].toFixed(3)}</strong>
+                  </div>
+                  <div className="text-[11px] text-amber-300">
+                    → Softmax P(y{k + 1}) = <strong>{(computedLayers.softmax[k] * 100).toFixed(1)}%</strong>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
